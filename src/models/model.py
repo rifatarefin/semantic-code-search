@@ -861,6 +861,7 @@ class Model(ABC):
              A list of either a 1D numpy array of the representation of the i-th element in data or None if a
              representation could not be computed.
         """
+        
         tensorized_data = defaultdict(list)  # type: Dict[str, List[Dict[str, Any]]]
         sample_to_tensorised_data_id = []  # type: List[Optional[SampleId]]
         for raw_sample in raw_data:
@@ -936,7 +937,7 @@ class Model(ABC):
                     is_test=True)
             else:
                 return False
-
+        print("get_code_representations")
         return self.__compute_representations_batched(code_data,
                                                       data_loader_fn=code_data_loader,
                                                       model_representation_op=self.__ops['code_representations'],
