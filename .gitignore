@@ -17,6 +17,7 @@ resources/
 !resources/README.md
 !tests/data/
 *.csv
+script/*.sif
 
 # environment
 *.ftpconfig

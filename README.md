@@ -2,21 +2,21 @@
 
 Forked from the official [CodeSearchNet](https://github.com/github/CodeSearchNet) challenge repository
 
-## Setup
+## Steps to run with Singularity
 
-1. Install docker from [official docs](https://docs.docker.com/get-started/)
-
-2. Install [Nvidia-Docker](https://github.com/NVIDIA/nvidia-docker)
-
-3. To download dataset, run from root directory
+1. If running on TACC clusters, load the Singularity module
+      ```
+      module load tacc-singularity
+      ``` 
+2. To download dataset, run from root directory
       ```
       script/setup
       ```
-4. Start docker container by running
+3. Start the container by running
     ```
     script/console
     ```
-5. Train a 1D-CNN model on Python data only, it will save the model in resources/saved_models directory
+4. Train a 1D-CNN model on Python data only, it will save the model in resources/saved_models directory
     ```
     python train.py --model 1dcnn /trained_models ../resources/data/python/final/jsonl/train ../resources/data/python/final/jsonl/valid ../resources/data/python/final/jsonl/test
     ```

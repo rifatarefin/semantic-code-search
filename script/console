@@ -4,9 +4,13 @@ set -e
 cd $(dirname "$0")/..
 
 # detect if user is on new version of nvidia-docker and run the appropriate command
-if docker run --gpus all nvidia/cuda:9.0-base nvidia-smi 2>/dev/null; then
-    docker run --gpus all -it --net=host -v $(pwd):/home/dev csnet:gpu bash
-else
-    docker run --runtime=nvidia -it --net=host -v $(pwd):/home/dev csnet:gpu bash
-fi
-
+#if docker run --gpus all nvidia/cuda:9.0-base nvidia-smi 2>/dev/null; then
+#    docker run --gpus all -it --net=host -v $(pwd):/home/dev csnet:gpu bash
+#else
+#    docker run --runtime=nvidia -it --net=host -v $(pwd):/home/dev csnet:gpu bash
+#fi
+#module load tacc-singularity
+#run from Docker Hub
+#singularity run --nv --home $(pwd):/home/dev docker://github/csnet:gpu bash
+#run locally
+singularity run --nv --home $(pwd):/home/dev script/csnet_gpu.sif bash

@@ -1,0 +1,2 @@
+ls
+nano console 

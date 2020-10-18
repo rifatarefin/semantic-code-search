@@ -3,5 +3,17 @@
 set -e
 cd $(dirname "$0")/..
 
-script/bootstrap
-docker run -v $(pwd):/home/dev preprocessing
+#script/bootstrap
+#docker run -v $(pwd):/home/dev preprocessing
+
+#module load tacc-singularity
+#singularity run --home $(pwd):/home/dev docker://marefin/code-search:preprocessing
+
+#build local image if csnet_gpu.sif does not exist already
+if [ ! -f script/csnet_gpu.sif ]; then
+	echo "building local image"
+	singularity build script/csnet_gpu.sif docker://github/csnet:gpu
+else
+	echo "local image exists"
+fi
+
