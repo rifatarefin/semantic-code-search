@@ -9,7 +9,6 @@ cd $(dirname "$0")/..
 #else
 #    docker run --runtime=nvidia -it --net=host -v $(pwd):/home/dev csnet:gpu bash
 #fi
-#module load tacc-singularity
 #run from Docker Hub
 #singularity run --nv --home $(pwd):/home/dev docker://github/csnet:gpu bash
 #run locally

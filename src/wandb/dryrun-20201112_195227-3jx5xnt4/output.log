@@ -1,0 +1,34 @@
+2020-11-12 19:52:30.071703: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0, 1, 2, 3
+2020-11-12 19:52:30.071931: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2020-11-12 19:52:30.071973: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 1 2 3 
+2020-11-12 19:52:30.072004: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N Y N N 
+2020-11-12 19:52:30.072020: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 1:   Y N N N 
+2020-11-12 19:52:30.072030: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 2:   N N N Y 
+2020-11-12 19:52:30.072039: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 3:   N N Y N 
+2020-11-12 19:52:30.072316: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10421 MB memory) -> physical GPU (device: 0, name: GeForce GTX 1080 Ti, pci bus id: 0000:02:00.0, compute capability: 6.1)
+2020-11-12 19:52:30.072605: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:1 with 10421 MB memory) -> physical GPU (device: 1, name: GeForce GTX 1080 Ti, pci bus id: 0000:03:00.0, compute capability: 6.1)
+2020-11-12 19:52:30.072854: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:2 with 10421 MB memory) -> physical GPU (device: 2, name: GeForce GTX 1080 Ti, pci bus id: 0000:82:00.0, compute capability: 6.1)
+2020-11-12 19:52:30.073056: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:3 with 10421 MB memory) -> physical GPU (device: 3, name: GeForce GTX 1080 Ti, pci bus id: 0000:83:00.0, compute capability: 6.1)
+Tokenizing and building vocabulary for code snippets and queries.  This step may take several hours.
+WARNING:tensorflow:From /work/07782/marefin/maverick2/semantic-code-search/src/models/model.py:330: calling norm (from tensorflow.python.ops.linalg_ops) with keep_dims is deprecated and will be removed in a future version.
+Instructions for updating:
+keep_dims is deprecated, use keepdims instead
+Starting training run neuralbowmodel-2020-11-12-19-52-27 of model NeuralBoWModel with following hypers:
+{'code_token_vocab_size': 10000, 'code_token_vocab_count_threshold': 10, 'code_token_embedding_size': 128, 'code_use_subtokens': False, 'code_mark_subtoken_end': False, 'code_max_num_tokens': 200, 'code_use_bpe': True, 'code_pct_bpe': 0.5, 'code_nbow_pool_mode': 'weighted_mean', 'query_token_vocab_size': 10000, 'query_token_vocab_count_threshold': 10, 'query_token_embedding_size': 128, 'query_use_subtokens': False, 'query_mark_subtoken_end': False, 'query_max_num_tokens': 30, 'query_use_bpe': True, 'query_pct_bpe': 0.5, 'query_nbow_pool_mode': 'weighted_mean', 'batch_size': 1000, 'optimizer': 'Adam', 'seed': 0, 'dropout_keep_rate': 0.9, 'learning_rate': 0.01, 'learning_rate_code_scale_factor': 1.0, 'learning_rate_query_scale_factor': 1.0, 'learning_rate_decay': 0.98, 'momentum': 0.85, 'gradient_clip': 1, 'loss': 'cosine', 'margin': 1, 'max_epochs': 2, 'patience': 5, 'fraction_using_func_name': 0.1, 'min_len_func_name_for_query': 12, 'query_random_token_frequency': 0.0}
+Loading training and validation data.
+Serving
+Serving
+Serving
+Serving
+Serving
+Serving
+Serving
+Serving
+Serving
+Serving
+Serving
+Serving
+Serving
+Serving
+Serving
+Exception

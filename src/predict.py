@@ -147,3 +147,4 @@ if __name__ == '__main__':
         # Using internal wandb API. TODO: Update when available as a public API
         internal_api = InternalApi()
         internal_api.push([predictions_base_csv], run=name, entity=entity, project=project)
+        print("Upload complete")

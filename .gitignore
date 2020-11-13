@@ -14,9 +14,10 @@
 
 # data
 resources/
+src/code2seq/java-large-model.tar.gz
+src/code2seq/models/java-large-model/model_iter52.release.data-00000-of-00001
 !resources/README.md
 !tests/data/
-*.csv
 script/*.sif
 
 # environment
@@ -26,3 +27,7 @@ script/*.sif
 /src/wandb/run-*
 /src/wandb/debug.log
 *.html
+
+.nv/
+.keras/
+**/*.pkl.gz

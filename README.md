@@ -46,4 +46,16 @@ Forked from the official [CodeSearchNet](https://github.com/github/CodeSearchNet
 
 Check the [notebook](src/code_search.ipynb) to predict from example queries
 
+## Train with pretrained code2seq
+
+1. Download a pretrained code2seq model following the instructions of [code2seq](https://github.com/tech-srl/code2seq) repo
+
+2. Move the `tar.gz` file in the location `src/code2seq/` and extract
+
+3. Train using code2seq
+
+		cd src/
+
+		python train_code2seq.py  ../saved_models ../resources/data/java/final/jsonl/train ../resources/data/java/final/jsonl/valid ../resources/data/java/final/jsonl/test
+
 

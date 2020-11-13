@@ -1,0 +1,34 @@
+{
+    "root": "/work/07782/marefin/maverick2/semantic-code-search",
+    "program": "train.py",
+    "git": {
+        "remote": "https://github.com/rifatarefin/semantic-code-search.git",
+        "commit": "ff3a73f180e4174a5ccd85239588df3337dc75a4"
+    },
+    "email": null,
+    "startedAt": "2020-11-12T19:52:28.076963",
+    "host": "c227-122.maverick2.tacc.utexas.edu",
+    "username": "marefin",
+    "executable": "/usr/bin/python",
+    "os": "Linux-3.10.0-957.12.1.el7.x86_64-x86_64-with-Ubuntu-16.04-xenial",
+    "python": "3.6.12",
+    "gpu": "GeForce GTX 1080 Ti",
+    "gpu_count": 4,
+    "cpu_count": 16,
+    "cuda": "9.0.176",
+    "args": [
+        "--testrun",
+        "--dryrun",
+        "../saved_models",
+        "../resources/data/java/final/jsonl/train",
+        "../resources/data/java/final/jsonl/valid",
+        "../resources/data/java/final/jsonl/test"
+    ],
+    "state": "killed",
+    "jobType": null,
+    "mode": "dryrun",
+    "name": "neuralbowmodel-2020-11-12-19-52-27",
+    "project": "CodeSearchNet",
+    "heartbeatAt": "2020-11-12T19:53:47.133079",
+    "exitcode": 255
+}

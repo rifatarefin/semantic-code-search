@@ -16,6 +16,7 @@ RUN pip --no-cache-dir install --upgrade \
     pandas \
     parso \
     pytest \
+    rouge \
     mypy
 
 RUN pip --no-cache-dir install --upgrade \

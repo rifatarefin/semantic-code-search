@@ -16,10 +16,17 @@ from dpu_utils.utils import RichPath
 from utils.py_utils import run_jobs_in_parallel
 from encoders import Encoder, QueryType
 
+code2seq_model = None
 
 LoadedSamples = Dict[str, List[Dict[str, Any]]]
 SampleId = Tuple[str, int]
 
+# class code2seq_predict:
+#     def __init__(self, config, model):
+#         model.predict([])
+#         self.model = model
+#         # self.config = config
+#         self.path_extractor = Extractor(config, EXTRACTION_API, self.config.MAX_PATH_LENGTH, max_path_width=2)
 
 class RepresentationType(Enum):
     CODE = auto()
@@ -56,10 +63,27 @@ def parse_data_file(hyperparameters: Dict[str, Any],
         # the load_data_from_sample method call places processed data into sample, and
         # returns a boolean flag indicating if sample should be used
         function_name = raw_sample.get('func_name')
+
+        # code2seq 
+        code_token = []
+        tk = code2seq_model.predict(raw_sample['code'])
+        if(type(tk)==dict):
+            # print("yeee")
+            
+            for idx,pred in tk.items():
+                names = pred.original_name.split('|')
+                
+                code_token.extend(step.prediction for step in pred.predictions)
+                code_token.extend(x for x in names if x not in code_token)
+
+        # print(code_token)        
+        # print("************")
+        # print(raw_sample['code_tokens'])
+        
         use_code_flag = code_encoder_class.load_data_from_sample("code",
                                                                  hyperparameters,
                                                                  per_code_language_metadata[language],
-                                                                 raw_sample['code_tokens'],
+                                                                 code_token,
                                                                  function_name,
                                                                  sample,
                                                                  is_test)
@@ -122,7 +146,7 @@ class Model(ABC):
 
         self.__query_encoder_type = query_encoder_type
         self.__query_encoder: Any = None
-
+        
         # start with default hyper-params and then override them
         self.hyperparameters = self.get_default_hyperparameters()
         self.hyperparameters.update(hyperparameters)
@@ -190,6 +214,13 @@ class Model(ABC):
                                                      simple_value=value)])
         self.__summary_writer.add_summary(summary, step)
         self.__summary_writer.flush()
+
+    ##code2seq
+    @staticmethod
+    def set_summarizer(code2seq):
+        global code2seq_model
+        code2seq_model = code2seq
+        print("code2seq"+str(type(code2seq_model)))
 
     def save(self, path: RichPath) -> None:
         variables_to_save = list(set(self.__sess.graph.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)))
@@ -921,6 +952,7 @@ class Model(ABC):
     def get_code_representations(self, code_data: List[Dict[str, Any]]) -> List[Optional[np.ndarray]]:
         def code_data_loader(sample_to_parse, result_holder):
             code_tokens = sample_to_parse['code_tokens']
+            # print(code_tokens[0]+code_tokens[1]+code_tokens[2])
             language = sample_to_parse['language']
             if language.startswith('python'):
                 language = 'python'
@@ -937,7 +969,7 @@ class Model(ABC):
                     is_test=True)
             else:
                 return False
-        print("get_code_representations")
+        # print("get_code_representations")
         return self.__compute_representations_batched(code_data,
                                                       data_loader_fn=code_data_loader,
                                                       model_representation_op=self.__ops['code_representations'],
