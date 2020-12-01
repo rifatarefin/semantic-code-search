@@ -32,34 +32,151 @@ Options:
     --evaluate-model PATH            Run evaluation on previously trained model.
     --sequential                     Do not parallelise data-loading. Simplifies debugging. [default: False]
     --debug                          Enable debug routines. [default: False]
+    --code2seq                       code2seq preprocess. [default: False]
+    
 """
 import json
 import os
+import multiprocessing
 import sys
 import time
-from typing import Type, Dict, Any, Optional, List
+from typing import Type, Dict, Any, Optional, List, Tuple, DefaultDict, Union, Iterable
 from pathlib import Path
 
 from docopt import docopt
 from dpu_utils.utils import RichPath, git_tag_run, run_and_debug
 import wandb
-
+import numpy as np
+from encoders import Encoder
 import model_restore_helper
 from model_test import compute_evaluation_metrics
 from models.model import Model
 import model_test as test
+import pickle
 
-from code2seq.config import Config
-from code2seq.model import Model as Code2seq
-from code2seq.interactive_predict import InteractivePredictor
+from models.code2seq.config import Config
+from models.code2seq.model import Model as Code2seq
+from models.code2seq.interactive_predict import InteractivePredictor
 
-config = Config.get_default_config(None)
-code2seq_model = Code2seq(config)
-summarizer = InteractivePredictor(config, code2seq_model)
+LoadedSamples = Dict[str, List[Dict[str, Any]]]
+
+def get_data_files_from_directory(data_dirs: List[RichPath],
+                                  max_files_per_dir: Optional[int] = None) -> List[RichPath]:
+    files = []  # type: List[str]
+    for data_dir in data_dirs:
+        dir_files = data_dir.get_filtered_files_in_dir('*.jsonl.gz')
+        if max_files_per_dir:
+            dir_files = sorted(dir_files)[:int(max_files_per_dir)]
+        files += dir_files
+
+    np.random.shuffle(files)  # This avoids having large_file_0, large_file_1, ... subsequences
+    return files
+
+
+def parse_data_file(
+                    data_file: RichPath):
+    
+    import tensorflow as tf
+
+    results = []
+    for raw_sample in data_file.read_by_file_suffix():
+        # sample: Dict = {}
+        # language = raw_sample['language']
+        # if language.startswith('python'):  # In some datasets, we use 'python-2.7' and 'python-3'
+        #     language = 'python'
+
+        # # the load_data_from_sample method call places processed data into sample, and
+        # # returns a boolean flag indicating if sample should be used
+        # function_name = raw_sample.get('func_name')
+
+        # code2seq 
+        
+        print("type: %%%%%")
+        config = tf.ConfigProto()
+        config.gpu_options.per_process_gpu_memory_fraction = 0.02
+        sess = tf.Session(config=config)
+        config_new = Config.get_default_config(None)
+        code2seq_config = Code2seq(config_new, sess)
+        
+        
+        code2seq_model = InteractivePredictor(config_new, code2seq_config)
+        
+        
+        code_token = []
+        tk = code2seq_model.predict(raw_sample['code'])
+        if(type(tk)==dict):
+            # print("yeee")
+            
+            for idx,pred in tk.items():
+                names = pred.original_name.split('|')
+                
+                code_token.extend(step.prediction for step in pred.predictions)
+                code_token.extend(x for x in names if x not in code_token)
+
+
+        # print(code_token)        
+        # print("************")
+        sess.close()
+        
+        # print("type: %",code2seq_config)
+        
+        # print(raw_sample['code'])
+
+        # use_code_flag = code_encoder_class.load_data_from_sample("code",
+        #                                                          hyperparameters,
+        #                                                          per_code_language_metadata[language],
+        #                                                          raw_sample['code_tokens'],
+        #                                                          function_name,
+        #                                                          sample,
+        #                                                          is_test)
+
+        # use_query_flag = query_encoder_class.load_data_from_sample("query",
+        #                                                            hyperparameters,
+        #                                                            query_metadata,
+        #                                                            [d.lower() for d in raw_sample['docstring_tokens']],
+        #                                                            function_name,
+        #                                                            sample,
+        #                                                            is_test)
+        # use_example = use_code_flag and use_query_flag
+        raw_sample['code_tokens'] = code_token
+        print(raw_sample['code_tokens'])
+        results.append(raw_sample.copy())
+        
+        
+    return results
+def load_data_from_dirs(data_dirs: List[RichPath], is_test: bool,
+                        max_files_per_dir: Optional[int] = None,
+                        return_num_original_samples: bool = False, 
+                        parallelize: bool = True) -> Union[LoadedSamples, Tuple[LoadedSamples, int]]:
+    return load_data_from_files(data_files=list(get_data_files_from_directory(data_dirs, max_files_per_dir)),
+                                    is_test=is_test,
+                                    return_num_original_samples=return_num_original_samples,
+                                    parallelize=parallelize)
+def load_data_from_files(data_files: Iterable[RichPath], is_test: bool,
+                            return_num_original_samples: bool = False, parallelize: bool = True) -> Union[LoadedSamples, Tuple[LoadedSamples, int]]:
+    print(type(data_files[0]))
+    tasks_as_args = [(
+                        # self.hyperparameters,
+                        # self.__code_encoder_type,
+                        # self.__per_code_language_metadata,
+                        # self.__query_encoder_typ,
+                        # self.__query_metadata,
+                        # is_test,
+                        (data_file,))
+                        for data_file in data_files]
+
+    if parallelize:
+        # multiprocessing.set_start_method('spawn', force=True)
+        with multiprocessing.Pool(processes=45) as pool:
+            per_file_results = pool.starmap(parse_data_file, tasks_as_args)
+    else:
+        per_file_results = [parse_data_file(*task_args) for task_args in tasks_as_args]
+    return per_file_results
 
 def run_train(model_class: Type[Model],
-              train_data_dirs: List[RichPath],
-              valid_data_dirs: List[RichPath],
+              train_data_dirs,
+              train_data,
+              valid_data,
               save_folder: str,
               hyperparameters: Dict[str, Any],
               azure_info_path: Optional[str],
@@ -93,8 +210,8 @@ def run_train(model_class: Type[Model],
     
     wandb.config.update(model.hyperparameters)
     model.train_log("Loading training and validation data.")
-    train_data = model.load_data_from_dirs(train_data_dirs, is_test=False, max_files_per_dir=max_files_per_dir, parallelize=parallelize)
-    valid_data = model.load_data_from_dirs(valid_data_dirs, is_test=False, max_files_per_dir=max_files_per_dir, parallelize=parallelize)
+    train_data = model.load_data_from_files(train_data, is_test=False, parallelize=parallelize)
+    valid_data = model.load_data_from_files(valid_data, is_test=False, parallelize=parallelize)
     model.train_log("Begin Training.")
     model_path = model.train(train_data, valid_data, azure_info_path, quiet=quiet, resume=resume)
     return model_path
@@ -130,6 +247,24 @@ def run(arguments, tag_in_vcs=False) -> None:
     valid_data_dirs = test.expand_data_path(arguments['VALID_DATA_PATH'], azure_info_path)
     test_data_dirs = test.expand_data_path(arguments['TEST_DATA_PATH'], azure_info_path)
     
+    ##code2seq input
+
+    train_data = load_data_from_dirs(train_data_dirs, is_test=False, max_files_per_dir=max_files_per_dir, parallelize=True)
+    valid_data = load_data_from_dirs(valid_data_dirs, is_test=False, max_files_per_dir=max_files_per_dir, parallelize=True)
+
+    print("outer type: ",type(train_data))
+    for t in train_data:
+        print("inner type: ", type(t))
+        for s in t:
+            print("inner type: ", type(s))
+            print(s)
+        break 
+
+    with open('train_data_1.pkl','wb') as f:
+        pickle.dump(train_data, f)
+    with open('valid_data_1.pkl','wb') as f:
+        pickle.dump(valid_data, f)
+    
     # default model save location
     if not arguments['SAVE_FOLDER']:
         arguments['SAVE_FOLDER'] =  str(dir_path.parent/'resources/saved_models/')
@@ -138,9 +273,7 @@ def run(arguments, tag_in_vcs=False) -> None:
 
     model_class = model_restore_helper.get_model_class_from_name(arguments['--model'])
 
-    #code2seq
-    model_class.set_summarizer(summarizer)
-    print(type(summarizer))
+    
 
     hyperparameters = model_class.get_default_hyperparameters()
     run_name = make_run_id(arguments)
@@ -185,10 +318,10 @@ def run(arguments, tag_in_vcs=False) -> None:
     if arguments.get('--evaluate-model'):
         model_path = RichPath.create(arguments['--evaluate-model'])
     else:
-        model_path = run_train(model_class, train_data_dirs, valid_data_dirs, save_folder, hyperparameters,
+        model_path = run_train(model_class, train_data_dirs, train_data, valid_data, save_folder, hyperparameters,
                                azure_info_path, run_name, arguments['--quiet'],
                                max_files_per_dir=max_files_per_dir,
-                               parallelize=False)#not(arguments['--sequential'])
+                               parallelize=not(arguments['--sequential']))
 
     wandb.config['best_model_path'] = str(model_path)
     wandb.save(str(model_path.to_local_path()))

@@ -10,13 +10,17 @@ from typing import List, Dict, Any, Iterable, Tuple, Optional, Union, Callable, 
 
 import numpy as np
 import wandb
-import tensorflow as tf
+
 from dpu_utils.utils import RichPath
 
 from utils.py_utils import run_jobs_in_parallel
 from encoders import Encoder, QueryType
+import tensorflow as tf
 
-code2seq_model = None
+
+config_new = None
+code2seq_config = None
+tf_sess = None
 
 LoadedSamples = Dict[str, List[Dict[str, Any]]]
 SampleId = Tuple[str, int]
@@ -52,9 +56,12 @@ def parse_data_file(hyperparameters: Dict[str, Any],
                     query_encoder_class: Type[Encoder],
                     query_metadata: Dict[str, Any],
                     is_test: bool,
-                    data_file: RichPath) -> Dict[str, List[Tuple[bool, Dict[str, Any]]]]:
+                    data_file) -> Dict[str, List[Tuple[bool, Dict[str, Any]]]]:
+    
+    
+
     results: DefaultDict[str, List] = defaultdict(list)
-    for raw_sample in data_file.read_by_file_suffix():
+    for raw_sample in data_file:
         sample: Dict = {}
         language = raw_sample['language']
         if language.startswith('python'):  # In some datasets, we use 'python-2.7' and 'python-3'
@@ -65,25 +72,42 @@ def parse_data_file(hyperparameters: Dict[str, Any],
         function_name = raw_sample.get('func_name')
 
         # code2seq 
-        code_token = []
-        tk = code2seq_model.predict(raw_sample['code'])
-        if(type(tk)==dict):
-            # print("yeee")
+        
+        
+        print("type: %%%%%")
+        
+        global config_new
+        global code2seq_config
+
+        
+        
+        # code2seq_config.predict([])
+        # code2seq_model = InteractivePredictor(config_new, code2seq_config)
+        # code2seq_model.predict([])
+        
+        # print("type: %",code2seq_config)
+        # tk = code2seq_model.predict(raw_sample['code'])
+        
+        # code_token = []
+        # tk = code2seq_model.predict(raw_sample['code'])
+        # if(type(tk)==dict):
+        #     # print("yeee")
             
-            for idx,pred in tk.items():
-                names = pred.original_name.split('|')
+        #     for idx,pred in tk.items():
+        #         names = pred.original_name.split('|')
                 
-                code_token.extend(step.prediction for step in pred.predictions)
-                code_token.extend(x for x in names if x not in code_token)
+        #         code_token.extend(step.prediction for step in pred.predictions)
+        #         code_token.extend(x for x in names if x not in code_token)
+
 
         # print(code_token)        
         # print("************")
-        # print(raw_sample['code_tokens'])
-        
+        # print(raw_sample['code'])
+
         use_code_flag = code_encoder_class.load_data_from_sample("code",
                                                                  hyperparameters,
                                                                  per_code_language_metadata[language],
-                                                                 code_token,
+                                                                 raw_sample['code_tokens'],
                                                                  function_name,
                                                                  sample,
                                                                  is_test)
@@ -97,9 +121,10 @@ def parse_data_file(hyperparameters: Dict[str, Any],
                                                                    is_test)
         use_example = use_code_flag and use_query_flag
         results[language].append((use_example, sample))
+        
     return results
 
-
+import tensorflow as tf
 class Model(ABC):
     @classmethod
     @abstractmethod
@@ -169,6 +194,7 @@ class Model(ABC):
         else:
             self.__log_save_dir = log_save_dir  # type: str
 
+        
         config = tf.ConfigProto()
         config.gpu_options.allow_growth = True
         if "gpu_device_id" in self.hyperparameters:
@@ -176,6 +202,19 @@ class Model(ABC):
 
         graph = tf.Graph()
         self.__sess = tf.Session(graph=graph, config=config)
+
+        global tf_sess
+        tf_sess = self.__sess
+        # global code2seq_model
+        
+        # global config_new
+        # global code2seq_config
+        # config_new = Config.get_default_config(None)
+        # code2seq_config = Code2seq(config_new, None)
+        # code2seq_model = InteractivePredictor(config_new, code2seq_config)
+        # code2seq_model.predict([])
+
+        
 
         # save directory as tensorboard.
         self.__tensorboard_dir = log_save_dir
@@ -215,12 +254,7 @@ class Model(ABC):
         self.__summary_writer.add_summary(summary, step)
         self.__summary_writer.flush()
 
-    ##code2seq
-    @staticmethod
-    def set_summarizer(code2seq):
-        global code2seq_model
-        code2seq_model = code2seq
-        print("code2seq"+str(type(code2seq_model)))
+
 
     def save(self, path: RichPath) -> None:
         variables_to_save = list(set(self.__sess.graph.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)))
@@ -280,6 +314,14 @@ class Model(ABC):
                                                       dtype=np.float32),
                                         shape=[self.hyperparameters['batch_size']],
                                         name='sample_loss_weights')
+
+        # with tf.variable_scope("code2seq"):
+        #     global config_new
+        #     global code2seq_config
+        #     config_new = Config.get_default_config(None)
+        #     code2seq_config = Code2seq(config_new, self.__sess)
+        #     code2seq_model = InteractivePredictor(config_new, code2seq_config)
+
 
         with tf.variable_scope("code_encoder"):
             language_encoders = []
@@ -488,7 +530,7 @@ class Model(ABC):
                                          return_num_original_samples=return_num_original_samples,
                                          parallelize=parallelize)
 
-    def load_data_from_files(self, data_files: Iterable[RichPath], is_test: bool,
+    def load_data_from_files(self, data_files, is_test: bool,
                              return_num_original_samples: bool = False, parallelize: bool = True) -> Union[LoadedSamples, Tuple[LoadedSamples, int]]:
         tasks_as_args = [(self.hyperparameters,
                           self.__code_encoder_type,
@@ -500,6 +542,7 @@ class Model(ABC):
                          for data_file in data_files]
 
         if parallelize:
+            # multiprocessing.set_start_method('spawn', force=True)
             with multiprocessing.Pool() as pool:
                 per_file_results = pool.starmap(parse_data_file, tasks_as_args)
         else:
@@ -867,7 +910,7 @@ class Model(ABC):
             tf.io.write_graph(self.__sess.graph,
                               logdir=wandb.run.dir,
                               name=f'{self.run_name}-graph.pbtxt')
-
+            # self.code2seq_config.close_session()
         self.__summary_writer.close()
         return model_path
 

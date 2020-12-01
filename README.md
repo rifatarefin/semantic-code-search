@@ -56,6 +56,6 @@ Check the [notebook](src/code_search.ipynb) to predict from example queries
 
 		cd src/
 
-		python train_code2seq.py  ../saved_models ../resources/data/java/final/jsonl/train ../resources/data/java/final/jsonl/valid ../resources/data/java/final/jsonl/test
+		python train.py  --max-files-per-dir 1 --run-name code2seq ../saved_models ../resources/data/java/final/jsonl/train ../resources/data/java/final/jsonl/valid ../resources/data/java/final/jsonl/test
 
 

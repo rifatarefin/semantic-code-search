@@ -134,6 +134,7 @@ class SeqEncoder(Encoder):
         function-name as the query, and replacing the function name in the code with an out-of-vocab token.
         Sub-tokenizes, converts, and pads both versions, and rejects empty samples.
         """
+        
         # Save the two versions of the code and query:
         data_holder = {QueryType.DOCSTRING.value: data_to_load, QueryType.FUNCTION_NAME.value: None}
         # Skip samples where the function name is very short, because it probably has too little information
