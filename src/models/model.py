@@ -106,8 +106,8 @@ class Model(ABC):
                 'query_random_token_frequency': 0.,
 
                 # Maximal number of tokens considered to compute a representation for code/query:
-                'code_max_num_tokens': 200,
-                'query_max_num_tokens': 30,
+                'code_max_num_tokens': 1024,
+                'query_max_num_tokens': 1024,
                }
 
     def __init__(self,
@@ -129,7 +129,7 @@ class Model(ABC):
 
         self.__query_metadata: Dict[str, Any] = {}
         self.__per_code_language_metadata: Dict[str, Any] = {}
-        self.__placeholders: Dict[str, Union[tf.placeholder, tf.placeholder_with_default]] = {}
+        self.__placeholders: Dict[str, Union[tf.compat.v1.placeholder, tf.compat.v1.placeholder_with_default]] = {}
         self.__ops: Dict[str, Any] = {}
         if run_name is None:
             run_name = type(self).__name__
@@ -145,13 +145,13 @@ class Model(ABC):
         else:
             self.__log_save_dir = log_save_dir  # type: str
 
-        config = tf.ConfigProto()
+        config = tf.compat.v1.ConfigProto()
         config.gpu_options.allow_growth = True
         if "gpu_device_id" in self.hyperparameters:
             config.gpu_options.visible_device_list = str(self.hyperparameters["gpu_device_id"])
 
         graph = tf.Graph()
-        self.__sess = tf.Session(graph=graph, config=config)
+        self.__sess = tf.compat.v1.Session(graph=graph, config=config)
 
         # save directory as tensorboard.
         self.__tensorboard_dir = log_save_dir
@@ -186,13 +186,13 @@ class Model(ABC):
 
     def _log_tensorboard_scalar(self, tag:str, value:float, step:int) -> None:
         """Log scalar values that are not ops to tensorboard."""
-        summary = tf.Summary(value=[tf.Summary.Value(tag=tag,
+        summary = tf.compat.v1.Summary(value=[tf.compat.v1.Summary.Value(tag=tag,
                                                      simple_value=value)])
         self.__summary_writer.add_summary(summary, step)
         self.__summary_writer.flush()
 
     def save(self, path: RichPath) -> None:
-        variables_to_save = list(set(self.__sess.graph.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)))
+        variables_to_save = list(set(self.__sess.graph.get_collection(tf.compat.v1.GraphKeys.GLOBAL_VARIABLES)))
         weights_to_save = self.__sess.run(variables_to_save)
         weights_to_save = {var.name: value
                            for (var, value) in zip(variables_to_save, weights_to_save)}
@@ -226,13 +226,13 @@ class Model(ABC):
         with self.__sess.graph.as_default():
             random.seed(self.hyperparameters['seed'])
             np.random.seed(self.hyperparameters['seed'])
-            tf.set_random_seed(self.hyperparameters['seed'])
+            tf.compat.v1.set_random_seed(self.hyperparameters['seed'])
 
             self._make_model(is_train=is_train)
             self._make_loss()
             if is_train:
                 self._make_training_step()
-                self.__summary_writer = tf.summary.FileWriter(self.__tensorboard_dir, self.__sess.graph)
+                self.__summary_writer = tf.compat.v1.summary.FileWriter(self.__tensorboard_dir, self.__sess.graph)
 
     def _make_model(self, is_train: bool) -> None:
         """
@@ -241,43 +241,47 @@ class Model(ABC):
         Note: This has to create self.ops['code_representations'] and self.ops['query_representations'],
         tensors of the same shape and rank 2.
         """
-        self.__placeholders['dropout_keep_rate'] = tf.placeholder(tf.float32,
+        self.__placeholders['dropout_keep_rate'] = tf.compat.v1.placeholder(tf.float32,
                                                                   shape=(),
                                                                   name='dropout_keep_rate')
         self.__placeholders['sample_loss_weights'] = \
-            tf.placeholder_with_default(input=np.ones(shape=[self.hyperparameters['batch_size']],
+            tf.compat.v1.placeholder_with_default(input=np.ones(shape=[self.hyperparameters['batch_size']],
                                                       dtype=np.float32),
                                         shape=[self.hyperparameters['batch_size']],
                                         name='sample_loss_weights')
 
-        with tf.variable_scope("code_encoder"):
+        # with tf.compat.v1.variable_scope("code_encoder"):
+        with tf.device('/gpu:0'):
             language_encoders = []
             for (language, language_metadata) in sorted(self.__per_code_language_metadata.items(), key=lambda kv: kv[0]):
-                with tf.variable_scope(language):
-                    self.__code_encoders[language] = self.__code_encoder_type(label="code",
-                                                                              hyperparameters=self.hyperparameters,
-                                                                              metadata=language_metadata)
-                    language_encoders.append(self.__code_encoders[language].make_model(is_train=is_train))
+                # with tf.compat.v1.variable_scope(language):
+                self.__code_encoders[language] = self.__code_encoder_type(label="code",
+                                                                          hyperparameters=self.hyperparameters,
+                                                                          metadata=language_metadata)
+                language_encoders.append(self.__code_encoders[language].make_model(is_train=is_train))
+
+            #print(language_encoders)
             self.ops['code_representations'] = tf.concat(language_encoders, axis=0)
-        with tf.variable_scope("query_encoder"):
+        with tf.device('/gpu:1'):
+        # with tf.compat.v1.variable_scope("query_encoder"):
             self.__query_encoder = self.__query_encoder_type(label="query",
                                                              hyperparameters=self.hyperparameters,
                                                              metadata=self.__query_metadata)
             self.ops['query_representations'] = self.__query_encoder.make_model(is_train=is_train)
 
-        code_representation_size = next(iter(self.__code_encoders.values())).output_representation_size
+            code_representation_size = next(iter(self.__code_encoders.values())).output_representation_size
         query_representation_size = self.__query_encoder.output_representation_size
         assert code_representation_size == query_representation_size, \
             f'Representations produced for code ({code_representation_size}) and query ({query_representation_size}) cannot differ!'
 
     def get_code_token_embeddings(self, language: str) -> Tuple[tf.Tensor, List[str]]:
         with self.__sess.graph.as_default():
-            with tf.variable_scope("code_encoder"):
+            with tf.compat.v1.variable_scope("code_encoder"):
                 return self.__code_encoders[language].get_token_embeddings()
 
     def get_query_token_embeddings(self) -> Tuple[tf.Tensor, List[str]]:
         with self.__sess.graph.as_default():
-            with tf.variable_scope("query_encoder"):
+            with tf.compat.v1.variable_scope("query_encoder"):
                 return self.__query_encoder.get_token_embeddings()
 
     def _make_loss(self) -> None:
@@ -292,12 +296,12 @@ class Model(ABC):
             similarity_scores = logits
 
             per_sample_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
-                labels=tf.range(tf.shape(self.ops['code_representations'])[0]),  # [0, 1, 2, 3, ..., n]
+                labels=tf.range(tf.shape(input=self.ops['code_representations'])[0]),  # [0, 1, 2, 3, ..., n]
                 logits=logits
             )
         elif self.hyperparameters['loss'] == 'cosine':
-            query_norms = tf.norm(self.ops['query_representations'], axis=-1, keep_dims=True) + 1e-10
-            code_norms = tf.norm(self.ops['code_representations'], axis=-1, keep_dims=True) + 1e-10
+            query_norms = tf.norm(tensor=self.ops['query_representations'], axis=-1, keepdims=True) + 1e-10
+            code_norms = tf.norm(tensor=self.ops['code_representations'], axis=-1, keepdims=True) + 1e-10
             cosine_similarities = tf.matmul(self.ops['query_representations'] / query_norms,
                                             self.ops['code_representations'] / code_norms,
                                             transpose_a=False,
@@ -307,10 +311,10 @@ class Model(ABC):
             similarity_scores = cosine_similarities
 
             # A max-margin-like loss, but do not penalize negative cosine similarities.
-            neg_matrix = tf.diag(tf.fill(dims=[tf.shape(cosine_similarities)[0]], value=float('-inf')))
+            neg_matrix = tf.linalg.tensor_diag(tf.fill(dims=[tf.shape(input=cosine_similarities)[0]], value=float('-inf')))
             per_sample_loss = tf.maximum(0., self.hyperparameters['margin']
-                                             - tf.diag_part(cosine_similarities)
-                                             + tf.reduce_max(tf.nn.relu(cosine_similarities + neg_matrix),
+                                             - tf.linalg.tensor_diag_part(cosine_similarities)
+                                             + tf.reduce_max(input_tensor=tf.nn.relu(cosine_similarities + neg_matrix),
                                                              axis=-1))
         elif self.hyperparameters['loss'] == 'max-margin':
             logits = tf.matmul(self.ops['query_representations'],
@@ -322,40 +326,40 @@ class Model(ABC):
             similarity_scores = logits
             logprobs = tf.nn.log_softmax(logits)
 
-            min_inf_matrix = tf.diag(tf.fill(dims=[tf.shape(logprobs)[0]], value=float('-inf')))
+            min_inf_matrix = tf.linalg.tensor_diag(tf.fill(dims=[tf.shape(input=logprobs)[0]], value=float('-inf')))
             per_sample_loss = tf.maximum(0., self.hyperparameters['margin']
-                                             - tf.diag_part(logprobs)
-                                             + tf.reduce_max(logprobs + min_inf_matrix, axis=-1))
+                                             - tf.linalg.tensor_diag_part(logprobs)
+                                             + tf.reduce_max(input_tensor=logprobs + min_inf_matrix, axis=-1))
         elif self.hyperparameters['loss'] == 'triplet':
             query_reps = self.ops['query_representations']  # BxD
             code_reps = self.ops['code_representations']    # BxD
 
-            query_reps = tf.broadcast_to(query_reps, shape=[tf.shape(query_reps)[0], tf.shape(query_reps)[0],tf.shape(query_reps)[1]])  # B*xBxD
-            code_reps = tf.broadcast_to(code_reps, shape=[tf.shape(code_reps)[0], tf.shape(code_reps)[0],tf.shape(code_reps)[1]])  # B*xBxD
-            code_reps = tf.transpose(code_reps, perm=(1, 0, 2))  # BxB*xD
+            query_reps = tf.broadcast_to(query_reps, shape=[tf.shape(input=query_reps)[0], tf.shape(input=query_reps)[0],tf.shape(input=query_reps)[1]])  # B*xBxD
+            code_reps = tf.broadcast_to(code_reps, shape=[tf.shape(input=code_reps)[0], tf.shape(input=code_reps)[0],tf.shape(input=code_reps)[1]])  # B*xBxD
+            code_reps = tf.transpose(a=code_reps, perm=(1, 0, 2))  # BxB*xD
 
-            all_pair_distances = tf.norm(query_reps - code_reps, axis=-1)  # BxB
+            all_pair_distances = tf.norm(tensor=query_reps - code_reps, axis=-1)  # BxB
             similarity_scores = -all_pair_distances
 
-            correct_distances = tf.expand_dims(tf.diag_part(all_pair_distances), axis=-1)  # Bx1
+            correct_distances = tf.expand_dims(tf.linalg.tensor_diag_part(all_pair_distances), axis=-1)  # Bx1
 
             pointwise_loss = tf.nn.relu(correct_distances - all_pair_distances + self.hyperparameters['margin']) # BxB
-            pointwise_loss *= (1 - tf.eye(tf.shape(pointwise_loss)[0]))
+            pointwise_loss *= (1 - tf.eye(tf.shape(input=pointwise_loss)[0]))
 
-            per_sample_loss = tf.reduce_sum(pointwise_loss, axis=-1) / (tf.reduce_sum(tf.cast(tf.greater(pointwise_loss, 0), dtype=tf.float32), axis=-1) + 1e-10)  # B
+            per_sample_loss = tf.reduce_sum(input_tensor=pointwise_loss, axis=-1) / (tf.reduce_sum(input_tensor=tf.cast(tf.greater(pointwise_loss, 0), dtype=tf.float32), axis=-1) + 1e-10)  # B
         else:
             raise Exception(f'Unrecognized loss-type "{self.hyperparameters["loss"]}"')
 
         per_sample_loss = per_sample_loss * self.placeholders['sample_loss_weights']
-        self.ops['loss'] = tf.reduce_sum(per_sample_loss) / tf.reduce_sum(self.placeholders['sample_loss_weights'])
+        self.ops['loss'] = tf.reduce_sum(input_tensor=per_sample_loss) / tf.reduce_sum(input_tensor=self.placeholders['sample_loss_weights'])
 
         # extract the logits from the diagonal of the matrix, which are the logits corresponding to the ground-truth
-        correct_scores = tf.diag_part(similarity_scores)
+        correct_scores = tf.linalg.tensor_diag_part(similarity_scores)
         # compute how many queries have bigger logits than the ground truth (the diagonal) -> which will be incorrectly ranked
         compared_scores = similarity_scores >= tf.expand_dims(correct_scores, axis=-1)
         # for each row of the matrix (query), sum how many logits are larger than the ground truth
         # ...then take the reciprocal of that to get the MRR for each individual query (you will need to take the mean later)
-        self.ops['mrr'] = 1 / tf.reduce_sum(tf.to_float(compared_scores), axis=1)
+        self.ops['mrr'] = 1 / tf.reduce_sum(input_tensor=tf.cast(compared_scores, dtype=tf.float32), axis=1)
 
     def _make_training_step(self) -> None:
         """
@@ -363,19 +367,19 @@ class Model(ABC):
         """
         optimizer_name = self.hyperparameters['optimizer'].lower()
         if optimizer_name == 'sgd':
-            optimizer = tf.train.GradientDescentOptimizer(learning_rate=self.hyperparameters['learning_rate'])
+            optimizer = tf.compat.v1.train.GradientDescentOptimizer(learning_rate=self.hyperparameters['learning_rate'])
         elif optimizer_name == 'rmsprop':
-            optimizer = tf.train.RMSPropOptimizer(learning_rate=self.hyperparameters['learning_rate'],
+            optimizer = tf.compat.v1.train.RMSPropOptimizer(learning_rate=self.hyperparameters['learning_rate'],
                                                   decay=self.hyperparameters['learning_rate_decay'],
                                                   momentum=self.hyperparameters['momentum'])
         elif optimizer_name == 'adam':
-            optimizer = tf.train.AdamOptimizer(learning_rate=self.hyperparameters['learning_rate'])
+            optimizer = tf.compat.v1.train.AdamOptimizer(learning_rate=self.hyperparameters['learning_rate'])
         else:
             raise Exception('Unknown optimizer "%s".' % (self.hyperparameters['optimizer']))
 
         # Calculate and clip gradients
-        trainable_vars = self.sess.graph.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
-        gradients = tf.gradients(self.ops['loss'], trainable_vars)
+        trainable_vars = self.sess.graph.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES)
+        gradients = tf.gradients(ys=self.ops['loss'], xs=trainable_vars)
         clipped_gradients, _ = tf.clip_by_global_norm(gradients, self.hyperparameters['gradient_clip'])
         pruned_clipped_gradients = []
         for (gradient, trainable_var) in zip(clipped_gradients, trainable_vars):
@@ -450,7 +454,7 @@ class Model(ABC):
 
     def load_data_from_dirs(self, data_dirs: List[RichPath], is_test: bool,
                             max_files_per_dir: Optional[int] = None,
-                            return_num_original_samples: bool = False, 
+                            return_num_original_samples: bool = False,
                             parallelize: bool = True) -> Union[LoadedSamples, Tuple[LoadedSamples, int]]:
         return self.load_data_from_files(data_files=list(get_data_files_from_directory(data_dirs, max_files_per_dir)),
                                          is_test=is_test,
@@ -722,6 +726,7 @@ class Model(ABC):
             ops_to_run = {'loss': self.__ops['loss'], 'mrr': self.__ops['mrr']}
             if is_train:
                 ops_to_run['train_step'] = self.__ops['train_step']
+            #print(ops_to_run)
             op_results = self.__sess.run(ops_to_run, feed_dict=batch_data_dict)
             assert not np.isnan(op_results['loss'])
 
@@ -758,8 +763,14 @@ class Model(ABC):
               quiet: bool = False,
               resume: bool = False) -> RichPath:
         model_path = RichPath.create(self.model_save_path, azure_info_path)
-        with self.__sess.as_default():
-            tf.set_random_seed(self.hyperparameters['seed'])
+        if 'gpt2' in self.model_save_path:
+            session = self.sess
+        else:
+            session = self.__sess.as_default()
+
+        with session:
+        # with tf.compat.v1.Session() as sess:
+            tf.compat.v1.set_random_seed(self.hyperparameters['seed'])
             train_data_per_lang_nums = {language: len(samples) for language, samples in train_data.items()}
             print('Training on %s samples.' % (", ".join("%i %s" % (num, lang) for (lang, num) in train_data_per_lang_nums.items())))
             valid_data_per_lang_nums = {language: len(samples) for language, samples in valid_data.items()}
@@ -770,7 +781,7 @@ class Model(ABC):
                 best_val_mrr_loss, best_val_mrr, _ = self.__run_epoch_in_batches(valid_data, "RESUME (valid)", is_train=False, quiet=quiet)
                 self.train_log('Validation Loss on Resume: %.6f' % (best_val_mrr_loss,))
             else:
-                init_op = tf.variables_initializer(self.__sess.graph.get_collection(tf.GraphKeys.GLOBAL_VARIABLES))
+                init_op = tf.compat.v1.variables_initializer(self.__sess.graph.get_collection(tf.compat.v1.GraphKeys.GLOBAL_VARIABLES))
                 self.__sess.run(init_op)
                 self.save(model_path)
                 best_val_mrr = 0
@@ -800,14 +811,14 @@ class Model(ABC):
                        'val-loss': val_loss,
                        'val-mrr': val_mrr,
                        'val-time-sec': val_time}
-                
+
                 # log to wandb
                 wandb.log(log)
-            
+
                 # log to tensorboard
                 for key in log:
                     if key != 'epoch':
-                        self._log_tensorboard_scalar(tag=key, 
+                        self._log_tensorboard_scalar(tag=key,
                                                      value=log[key],
                                                      step=epoch_number)
 
@@ -861,7 +872,7 @@ class Model(ABC):
              A list of either a 1D numpy array of the representation of the i-th element in data or None if a
              representation could not be computed.
         """
-        
+
         tensorized_data = defaultdict(list)  # type: Dict[str, List[Dict[str, Any]]]
         sample_to_tensorised_data_id = []  # type: List[Optional[SampleId]]
         for raw_sample in raw_data:
@@ -942,3 +953,4 @@ class Model(ABC):
                                                       data_loader_fn=code_data_loader,
                                                       model_representation_op=self.__ops['code_representations'],
                                                       representation_type=RepresentationType.CODE)
+

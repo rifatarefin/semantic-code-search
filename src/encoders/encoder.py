@@ -72,7 +72,7 @@ class Encoder(ABC):
         Creates placeholders for encoders.
         """
         self.__placeholders['dropout_keep_rate'] = \
-            tf.placeholder(tf.float32,
+            tf.compat.v1.placeholder(tf.float32,
                            shape=(),
                            name='dropout_keep_rate')
 

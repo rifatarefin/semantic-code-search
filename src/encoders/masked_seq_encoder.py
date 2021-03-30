@@ -25,7 +25,7 @@ class MaskedSeqEncoder(SeqEncoder):
         """
         super()._make_placeholders()
         self.placeholders['tokens_mask'] = \
-            tf.placeholder(tf.float32,
+            tf.compat.v1.placeholder(tf.float32,
                            shape=[None, self.get_hyper('max_num_tokens')],
                            name='tokens_mask')
 

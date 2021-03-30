@@ -35,7 +35,7 @@ class ConvSelfAttentionEncoder(MaskedSeqEncoder):
         return self.get_hyper('self_attention_hidden_size')
 
     def make_model(self, is_train: bool = False) -> tf.Tensor:
-        with tf.variable_scope("self_attention_encoder"):
+        with tf.compat.v1.variable_scope("self_attention_encoder"):
             self._make_placeholders()
 
             seq_tokens_embeddings = self.embedding_layer(self.placeholders['tokens'])
@@ -44,7 +44,7 @@ class ConvSelfAttentionEncoder(MaskedSeqEncoder):
             current_embeddings = seq_tokens_embeddings
             num_filters_and_width = zip(self.get_hyper('1dcnn_layer_list'), self.get_hyper('1dcnn_kernel_width'))
             for (layer_idx, (num_filters, kernel_width)) in enumerate(num_filters_and_width):
-                next_embeddings = tf.layers.conv1d(
+                next_embeddings = tf.compat.v1.layers.conv1d(
                     inputs=current_embeddings,
                     filters=num_filters,
                     kernel_size=kernel_width,
@@ -57,7 +57,7 @@ class ConvSelfAttentionEncoder(MaskedSeqEncoder):
                 current_embeddings = activation_fun(next_embeddings)
 
                 current_embeddings = tf.nn.dropout(current_embeddings,
-                                                   keep_prob=self.placeholders['dropout_keep_rate'])
+                                                   rate=1 - (self.placeholders['dropout_keep_rate']))
 
             config = BertConfig(vocab_size=self.get_hyper('token_vocab_size'),
                                 hidden_size=self.get_hyper('self_attention_hidden_size'),
@@ -78,7 +78,7 @@ class ConvSelfAttentionEncoder(MaskedSeqEncoder):
             else:
                 seq_token_embeddings = model.get_sequence_output()
                 seq_token_masks = self.placeholders['tokens_mask']
-                seq_token_lengths = tf.reduce_sum(seq_token_masks, axis=1)  # B
+                seq_token_lengths = tf.reduce_sum(input_tensor=seq_token_masks, axis=1)  # B
                 return pool_sequence_embedding(output_pool_mode,
                                                sequence_token_embeddings=seq_token_embeddings,
                                                sequence_lengths=seq_token_lengths,

@@ -1,3 +1,4 @@
+# From Fotios
 # coding=utf-8
 # Copyright 2018 The Google AI Language Team Authors.
 #
@@ -318,14 +319,14 @@ def dropout(input_tensor, dropout_prob):
     if dropout_prob is None or dropout_prob == 0.0:
         return input_tensor
 
-    output = tf.nn.dropout(input_tensor, 1 - (1.0 - dropout_prob))
+    output = tf.nn.dropout(input_tensor, 1 - (1 - (1.0 - dropout_prob)))
     return output
 
 
 def layer_norm(input_tensor, name=None):
     """Run layer normalization on the last dimension of the tensor."""
-    return tf.contrib.layers.layer_norm(
-        inputs=input_tensor, begin_norm_axis=-1, begin_params_axis=-1, scope=name)
+    layer_norma = tf.keras.layers.LayerNormalization(axis=-1)
+    return layer_norma(input_tensor)
 
 
 def layer_norm_and_dropout(input_tensor, dropout_prob, name=None):

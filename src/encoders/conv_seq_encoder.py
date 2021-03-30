@@ -28,7 +28,7 @@ class ConvolutionSeqEncoder(MaskedSeqEncoder):
         return self.get_hyper('1dcnn_layer_list')[-1]
 
     def make_model(self, is_train: bool=False) -> tf.Tensor:
-        with tf.variable_scope("1dcnn_encoder"):
+        with tf.compat.v1.variable_scope("1dcnn_encoder"):
             self._make_placeholders()
 
             seq_tokens_embeddings = self.embedding_layer(self.placeholders['tokens'])
@@ -38,7 +38,7 @@ class ConvolutionSeqEncoder(MaskedSeqEncoder):
             current_embeddings = seq_tokens_embeddings
             num_filters_and_width = zip(self.get_hyper('1dcnn_layer_list'), self.get_hyper('1dcnn_kernel_width'))
             for (layer_idx, (num_filters, kernel_width)) in enumerate(num_filters_and_width):
-                next_embeddings = tf.layers.conv1d(
+                next_embeddings = tf.compat.v1.layers.conv1d(
                     inputs=current_embeddings,
                     filters=num_filters,
                     kernel_size=kernel_width,
@@ -51,10 +51,10 @@ class ConvolutionSeqEncoder(MaskedSeqEncoder):
                 current_embeddings = activation_fun(next_embeddings)
 
                 current_embeddings = tf.nn.dropout(current_embeddings,
-                                                   keep_prob=self.placeholders['dropout_keep_rate'])
+                                                   rate=1 - (self.placeholders['dropout_keep_rate']))
 
             seq_token_mask = self.placeholders['tokens_mask']
-            seq_token_lengths = tf.reduce_sum(seq_token_mask, axis=1)  # B
+            seq_token_lengths = tf.reduce_sum(input_tensor=seq_token_mask, axis=1)  # B
             return pool_sequence_embedding(self.get_hyper('1dcnn_pool_mode').lower(),
                                            sequence_token_embeddings=current_embeddings,
                                            sequence_lengths=seq_token_lengths,
@@ -66,8 +66,8 @@ class ConvolutionSeqEncoder(MaskedSeqEncoder):
             return seq_inputs
         elif position_encoding == 'learned':
             position_embeddings = \
-                tf.get_variable(name='position_embeddings',
-                                initializer=tf.truncated_normal_initializer(stddev=0.02),
+                tf.compat.v1.get_variable(name='position_embeddings',
+                                initializer=tf.compat.v1.truncated_normal_initializer(stddev=0.02),
                                 shape=[self.get_hyper('max_num_tokens'),
                                        self.get_hyper('token_embedding_size')],
                                 )

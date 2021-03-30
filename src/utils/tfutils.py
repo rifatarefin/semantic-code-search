@@ -65,8 +65,8 @@ def write_to_feed_dict(feed_dict: Dict[tf.Tensor, Any], placeholder, val) -> Non
 class NoisyIdentityInitializer(Initializer):
     def __init__(self, noise: float=1e-1):
         self.__noise = noise
-        self.__identity_initializer = tf.initializers.identity()
-        self.__noise_initializer = tf.initializers.random_uniform(minval=-self.__noise, maxval=self.__noise)
+        self.__identity_initializer = tf.compat.v1.initializers.identity()
+        self.__noise_initializer = tf.compat.v1.initializers.random_uniform(minval=-self.__noise, maxval=self.__noise)
 
     def set_config(self):
         return {
@@ -97,7 +97,7 @@ def get_activation(activation_fun: Optional[str]):
         return tf.nn.selu
     if activation_fun == 'gelu':
         def gelu(input_tensor):
-            cdf = 0.5 * (1.0 + tf.erf(input_tensor / tf.sqrt(2.0)))
+            cdf = 0.5 * (1.0 + tf.math.erf(input_tensor / tf.sqrt(2.0)))
             return input_tensor * cdf
         return gelu
     else:
@@ -130,20 +130,20 @@ def pool_sequence_embedding(pool_mode: str,
     if pool_mode == 'mean':
         seq_token_embeddings_masked = \
             sequence_token_embeddings * tf.expand_dims(sequence_token_masks, axis=-1)  # B x T x D
-        seq_token_embeddings_sum = tf.reduce_sum(seq_token_embeddings_masked, axis=1)  # B x D
+        seq_token_embeddings_sum = tf.reduce_sum(input_tensor=seq_token_embeddings_masked, axis=1)  # B x D
         sequence_lengths = tf.expand_dims(tf.cast(sequence_lengths, dtype=tf.float32), axis=-1)  # B x 1
         return seq_token_embeddings_sum / sequence_lengths
     elif pool_mode == 'max':
         sequence_token_masks = -BIG_NUMBER * (1 - sequence_token_masks)  # B x T
         sequence_token_masks = tf.expand_dims(sequence_token_masks, axis=-1)  # B x T x 1
-        return tf.reduce_max(sequence_token_embeddings + sequence_token_masks, axis=1)
+        return tf.reduce_max(input_tensor=sequence_token_embeddings + sequence_token_masks, axis=1)
     elif pool_mode == 'weighted_mean':
-        token_weights = tf.layers.dense(sequence_token_embeddings,
+        token_weights = tf.compat.v1.layers.dense(sequence_token_embeddings,
                                         units=1,
                                         activation=tf.sigmoid,
                                         use_bias=False)  # B x T x 1
         token_weights *= tf.expand_dims(sequence_token_masks, axis=-1)  # B x T x 1
-        seq_embedding_weighted_sum = tf.reduce_sum(sequence_token_embeddings * token_weights, axis=1)  # B x D
-        return seq_embedding_weighted_sum / (tf.reduce_sum(token_weights, axis=1) + 1e-8)  # B x D
+        seq_embedding_weighted_sum = tf.reduce_sum(input_tensor=sequence_token_embeddings * token_weights, axis=1)  # B x D
+        return seq_embedding_weighted_sum / (tf.reduce_sum(input_tensor=token_weights, axis=1) + 1e-8)  # B x D
     else:
         raise ValueError("Unknown sequence pool mode '%s'!" % pool_mode)

@@ -9,8 +9,7 @@ from utils.tfutils import write_to_feed_dict, pool_sequence_embedding
 def __make_rnn_cell(cell_type: str,
                     hidden_size: int,
                     dropout_keep_rate: Union[float, tf.Tensor]=1.0,
-                    recurrent_dropout_keep_rate: Union[float, tf.Tensor]=1.0) \
-        -> tf.nn.rnn_cell.RNNCell:
+                    recurrent_dropout_keep_rate: Union[float, tf.Tensor]=1.0) -> tf.compat.v1.nn.rnn_cell.RNNCell:
     """
     Args:
         cell_type: "lstm", "gru", or 'rnn' (any casing)
@@ -23,11 +22,11 @@ def __make_rnn_cell(cell_type: str,
     """
     cell_type = cell_type.lower()
     if cell_type == 'lstm':
-        cell = tf.nn.rnn_cell.LSTMCell(hidden_size)
+        cell = tf.compat.v1.nn.rnn_cell.LSTMCell(hidden_size)
     elif cell_type == 'gru':
-        cell = tf.nn.rnn_cell.GRUCell(hidden_size)
+        cell = tf.compat.v1.nn.rnn_cell.GRUCell(hidden_size)
     elif cell_type == 'rnn':
-        cell = tf.nn.rnn_cell.BasicRNNCell(hidden_size)
+        cell = tf.compat.v1.nn.rnn_cell.BasicRNNCell(hidden_size)
     else:
         raise ValueError("Unknown RNN cell type '%s'!" % cell_type)
 
@@ -40,8 +39,7 @@ def _make_deep_rnn_cell(num_layers: int,
                         cell_type: str,
                         hidden_size: int,
                         dropout_keep_rate: Union[float, tf.Tensor]=1.0,
-                        recurrent_dropout_keep_rate: Union[float, tf.Tensor]=1.0) \
-        -> tf.nn.rnn_cell.RNNCell:
+                        recurrent_dropout_keep_rate: Union[float, tf.Tensor]=1.0) -> tf.compat.v1.nn.rnn_cell.RNNCell:
     """
     Args:
         num_layers: number of layers in result
@@ -58,7 +56,7 @@ def _make_deep_rnn_cell(num_layers: int,
     else:
         cells = [__make_rnn_cell(cell_type, hidden_size, dropout_keep_rate, recurrent_dropout_keep_rate)
                  for _ in range(num_layers)]
-        return tf.nn.rnn_cell.MultiRNNCell(cells)
+        return tf.compat.v1.nn.rnn_cell.MultiRNNCell(cells)
 
 
 class RNNEncoder(SeqEncoder):
@@ -98,7 +96,7 @@ class RNNEncoder(SeqEncoder):
                                            recurrent_dropout_keep_rate=self.placeholders['rnn_recurrent_dropout_keep_rate'],
                                            )
         if not self.get_hyper('rnn_is_bidirectional'):
-            (outputs, final_states) = tf.nn.dynamic_rnn(cell=rnn_cell_fwd,
+            (outputs, final_states) = tf.compat.v1.nn.dynamic_rnn(cell=rnn_cell_fwd,
                                                         inputs=inputs,
                                                         sequence_length=input_lengths,
                                                         dtype=tf.float32,
@@ -120,7 +118,7 @@ class RNNEncoder(SeqEncoder):
                                                recurrent_dropout_keep_rate=self.placeholders['rnn_recurrent_dropout_keep_rate'],
                                                )
 
-            (outputs, final_states) = tf.nn.bidirectional_dynamic_rnn(cell_fw=rnn_cell_fwd,
+            (outputs, final_states) = tf.compat.v1.nn.bidirectional_dynamic_rnn(cell_fw=rnn_cell_fwd,
                                                                       cell_bw=rnn_cell_bwd,
                                                                       inputs=inputs,
                                                                       sequence_length=input_lengths,
@@ -144,21 +142,21 @@ class RNNEncoder(SeqEncoder):
         return final_state, outputs
 
     def make_model(self, is_train: bool=False) -> tf.Tensor:
-        with tf.variable_scope("rnn_encoder"):
+        with tf.compat.v1.variable_scope("rnn_encoder"):
             self._make_placeholders()
 
             self.placeholders['tokens_lengths'] = \
-                tf.placeholder(tf.int32,
+                tf.compat.v1.placeholder(tf.int32,
                                shape=[None],
                                name='tokens_lengths')
 
             self.placeholders['rnn_dropout_keep_rate'] = \
-                tf.placeholder(tf.float32,
+                tf.compat.v1.placeholder(tf.float32,
                                shape=[],
                                name='rnn_dropout_keep_rate')
 
             self.placeholders['rnn_recurrent_dropout_keep_rate'] = \
-                tf.placeholder(tf.float32,
+                tf.compat.v1.placeholder(tf.float32,
                                shape=[],
                                name='rnn_recurrent_dropout_keep_rate')
 
@@ -172,8 +170,8 @@ class RNNEncoder(SeqEncoder):
             if output_pool_mode == 'rnn_final':
                 return rnn_final_state
             else:
-                token_mask = tf.expand_dims(tf.range(tf.shape(seq_tokens)[1]), axis=0)            # 1 x T
-                token_mask = tf.tile(token_mask, multiples=(tf.shape(seq_tokens_lengths)[0], 1))  # B x T
+                token_mask = tf.expand_dims(tf.range(tf.shape(input=seq_tokens)[1]), axis=0)            # 1 x T
+                token_mask = tf.tile(token_mask, multiples=(tf.shape(input=seq_tokens_lengths)[0], 1))  # B x T
                 token_mask = tf.cast(token_mask < tf.expand_dims(seq_tokens_lengths, axis=-1),
                                      dtype=tf.float32)                                            # B x T
                 return pool_sequence_embedding(output_pool_mode,

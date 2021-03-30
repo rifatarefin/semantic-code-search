@@ -2,7 +2,7 @@ from typing import Dict, Any
 
 import tensorflow as tf
 
-from .utils.bert_self_attention import BertConfig, BertModel
+from .utils.bert_self_attention_v2 import BertConfig, BertModel
 from .masked_seq_encoder import MaskedSeqEncoder
 from utils.tfutils import pool_sequence_embedding
 
@@ -29,7 +29,7 @@ class SelfAttentionEncoder(MaskedSeqEncoder):
         return self.get_hyper('self_attention_hidden_size')
 
     def make_model(self, is_train: bool = False) -> tf.Tensor:
-        with tf.variable_scope("self_attention_encoder"):
+        with tf.compat.v1.variable_scope("self_attention_encoder"):
             self._make_placeholders()
 
             config = BertConfig(vocab_size=self.get_hyper('token_vocab_size'),
@@ -49,8 +49,10 @@ class SelfAttentionEncoder(MaskedSeqEncoder):
                 return model.get_pooled_output()
             else:
                 seq_token_embeddings = model.get_sequence_output()
+                # Tensor("query_encoder/self_attention_encoder/bert/encoder/Reshape_4:0", shape=(?, 30, 128), dtype=float32)
                 seq_token_masks = self.placeholders['tokens_mask']
-                seq_token_lengths = tf.reduce_sum(seq_token_masks, axis=1)  # B
+                # Tensor("query_encoder/self_attention_encoder/tokens_mask:0", shape=(?, 30), dtype=float32)
+                seq_token_lengths = tf.reduce_sum(input_tensor=seq_token_masks, axis=1)  # B
                 return pool_sequence_embedding(output_pool_mode,
                                                sequence_token_embeddings=seq_token_embeddings,
                                                sequence_lengths=seq_token_lengths,

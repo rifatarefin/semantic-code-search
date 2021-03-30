@@ -12,7 +12,7 @@ cd $(dirname "$0")/..
 #build local image if csnet_gpu.sif does not exist already
 if [ ! -f script/csnet_gpu.sif ]; then
 	echo "building local image"
-	singularity build script/csnet_gpu.sif docker://github/csnet:gpu
+	singularity build script/csnet_gpu_tf2.sif docker://marefin/code-search:gpu_tf2
 else
 	echo "local image exists"
 fi

@@ -48,7 +48,7 @@ class SeqEncoder(Encoder):
         """
         super()._make_placeholders()
         self.placeholders['tokens'] = \
-            tf.placeholder(tf.int32,
+            tf.compat.v1.placeholder(tf.int32,
                            shape=[None, self.get_hyper('max_num_tokens')],
                            name='tokens')
 
@@ -63,15 +63,15 @@ class SeqEncoder(Encoder):
             3D tensor of shape (batch size, sequence length, embedding dimension)
         """
 
-        token_embeddings = tf.get_variable(name='token_embeddings',
-                                           initializer=tf.glorot_uniform_initializer(),
+        token_embeddings = tf.compat.v1.get_variable(name='token_embeddings',
+                                           initializer=tf.compat.v1.glorot_uniform_initializer(),
                                            shape=[len(self.metadata['token_vocab']),
                                                   self.get_hyper('token_embedding_size')],
                                            )
         self.__embeddings = token_embeddings
 
         token_embeddings = tf.nn.dropout(token_embeddings,
-                                         keep_prob=self.placeholders['dropout_keep_rate'])
+                                         rate=1 - (self.placeholders['dropout_keep_rate']))
 
         return tf.nn.embedding_lookup(params=token_embeddings, ids=token_inp)
 

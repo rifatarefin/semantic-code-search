@@ -59,7 +59,11 @@ def run_train(model_class: Type[Model],
               quiet: bool = False,
               max_files_per_dir: Optional[int] = None,
               parallelize: bool = True) -> RichPath:
+    # model_class <class 'models.self_att_model.SelfAttentionModel'> | <class 'models.gpt2_model.GPT2Model'>
+
     model = model_class(hyperparameters, run_name=run_name, model_save_dir=save_folder, log_save_dir=save_folder)
+    print(model)
+    # model <models.self_att_model.SelfAttentionModel object at 0x7f3c25dcbeb8>|  <models.gpt2_model.GPT2Model object at 0x7f3cc8be3eb8>
     if os.path.exists(model.model_save_path):
         model = model_restore_helper.restore(RichPath.create(model.model_save_path), is_train=True)
         model.train_log("Resuming training run %s of model %s with following hypers:\n%s" % (run_name,
@@ -67,12 +71,15 @@ def run_train(model_class: Type[Model],
                                                                                              str(hyperparameters)))
         resume = True
     else:
+        # print(model)
         model.train_log("Tokenizing and building vocabulary for code snippets and queries.  This step may take several hours.")
         model.load_metadata(train_data_dirs, max_files_per_dir=max_files_per_dir, parallelize=parallelize)
         model.make_model(is_train=True)
+        # print(model)
         model.train_log("Starting training run %s of model %s with following hypers:\n%s" % (run_name,
                                                                                              model.__class__.__name__,
-                                                                                             str(hyperparameters)))
+                                                                                             str(hyperparameters))) 
+        #Fotis
         resume = False
 
     philly_job_id = os.environ.get('PHILLY_JOB_ID')
@@ -86,6 +93,9 @@ def run_train(model_class: Type[Model],
     train_data = model.load_data_from_dirs(train_data_dirs, is_test=False, max_files_per_dir=max_files_per_dir, parallelize=parallelize)
     valid_data = model.load_data_from_dirs(valid_data_dirs, is_test=False, max_files_per_dir=max_files_per_dir, parallelize=parallelize)
     model.train_log("Begin Training.")
+    # print("valid_data")
+    # print(type(valid_data))
+    # print(valid_data)
     model_path = model.train(train_data, valid_data, azure_info_path, quiet=quiet, resume=resume)
     return model_path
 

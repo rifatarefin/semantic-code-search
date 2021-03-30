@@ -3,7 +3,7 @@ from typing import Dict, Any, Optional, Type
 import tensorflow as tf
 from dpu_utils.utils import RichPath
 
-from models import Model, NeuralBoWModel, RNNModel, SelfAttentionModel, ConvolutionalModel, ConvSelfAttentionModel
+from models import Model, NeuralBoWModel, RNNModel, SelfAttentionModel, ConvolutionalModel, ConvSelfAttentionModel, GPT2Model
 
 
 def get_model_class_from_name(model_name: str) -> Type[Model]:
@@ -18,6 +18,9 @@ def get_model_class_from_name(model_name: str) -> Type[Model]:
         return ConvolutionalModel
     elif model_name in {'convselfatt', 'convselfattentionmodel'}:
         return ConvSelfAttentionModel
+    elif model_name in {'gpt2', 'gpt2model'}:
+        print(model_name)
+        return GPT2Model
     else:
         raise Exception("Unknown model '%s'!" % model_name)
 
@@ -37,10 +40,10 @@ def restore(path: RichPath, is_train: bool, hyper_overrides: Optional[Dict[str, 
 
     variables_to_initialize = []
     with model.sess.graph.as_default():
-        with tf.name_scope("restore"):
+        with tf.compat.v1.name_scope("restore"):
             restore_ops = []
             used_vars = set()
-            for variable in sorted(model.sess.graph.get_collection(tf.GraphKeys.GLOBAL_VARIABLES), key=lambda v: v.name):
+            for variable in sorted(model.sess.graph.get_collection(tf.compat.v1.GraphKeys.GLOBAL_VARIABLES), key=lambda v: v.name):
                 used_vars.add(variable.name)
                 if variable.name in saved_data['weights']:
                     # print('Initializing %s from saved value.' % variable.name)
@@ -53,6 +56,6 @@ def restore(path: RichPath, is_train: bool, hyper_overrides: Optional[Dict[str, 
                     if var_name.endswith('Adam:0') or var_name.endswith('Adam_1:0') or var_name in ['beta1_power:0', 'beta2_power:0']:
                         continue
                     print('Saved weights for %s not used by model.' % var_name)
-            restore_ops.append(tf.variables_initializer(variables_to_initialize))
+            restore_ops.append(tf.compat.v1.variables_initializer(variables_to_initialize))
             model.sess.run(restore_ops)
     return model
