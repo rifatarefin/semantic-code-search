@@ -122,11 +122,9 @@ class MrrSearchTester:
             # Design decision: If a representation cannot be computed assign a random representation. This keeps
             # the batch size identical across all models.
             batch_code_representations = np.array(
-                [self_or_random_representation(code_representations[i]) for i in range(self.__test_batch_size)],
-                dtype=np.float32)
+                [self_or_random_representation(code_representations[i]) for i in range(self.__test_batch_size)], dtype=np.float32)        ##
             batch_query_representations = np.array(
-                [self_or_random_representation(query_representations[i]) for i in range(self.__test_batch_size)],
-                dtype=np.float32)
+                [self_or_random_representation(query_representations[i]) for i in range(self.__test_batch_size)], dtype=np.float32)       ##
 
             ranks, distances = compute_ranks(batch_code_representations,
                                              batch_query_representations,
@@ -141,7 +139,7 @@ class MrrSearchTester:
                         continue
                     language = example['language']
                     markdown_code = "```%s\n" % language + example['code'].strip("\n") + "\n```"
-                    examples_table.append([rank, language, example['func_name'], markdown_code])
+                    examples_table.append([rank, language, example['docstring'], markdown_code])
 
             sum_mrr += np.mean(1.0 / ranks)
 

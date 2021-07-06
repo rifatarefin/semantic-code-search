@@ -2,7 +2,7 @@ from typing import Dict, Any
 
 import tensorflow as tf
 
-from .utils.bert_self_attention import BertConfig, BertModel
+from .utils.bert_self_attention_v2 import BertConfig, BertModel
 from .masked_seq_encoder import MaskedSeqEncoder
 from utils.tfutils import get_activation, pool_sequence_embedding
 

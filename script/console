@@ -13,4 +13,4 @@ cd $(dirname "$0")/..
 #run from Docker Hub
 #singularity run --nv --home $(pwd):/home/dev docker://github/csnet:gpu bash
 #run locally
-singularity run --nv --home $(pwd):/home/dev script/csnet_gpu_mpi.sif bash
+singularity run --nv --home $(pwd):/home/dev script/csnet_gpu_horovod_mpi.sif bash

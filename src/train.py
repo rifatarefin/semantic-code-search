@@ -43,6 +43,7 @@ from pathlib import Path
 from docopt import docopt
 from dpu_utils.utils import RichPath, git_tag_run, run_and_debug
 import wandb
+import horovod.tensorflow as hvd
 
 import model_restore_helper
 from model_test import compute_evaluation_metrics
@@ -88,10 +89,10 @@ def run_train(model_class: Type[Model],
         with open(os.path.join(save_folder, philly_job_id+'.job'), 'w') as f:
             f.write(os.path.basename(model.model_save_path))
     
-    wandb.config.update(model.hyperparameters)
+    wandb.config.update(model.hyperparameters)                                                 #rifat
     model.train_log("Loading training and validation data.")
     train_data = model.load_data_from_dirs(train_data_dirs, is_test=False, max_files_per_dir=max_files_per_dir, parallelize=parallelize)
-    valid_data = model.load_data_from_dirs(valid_data_dirs, is_test=False, max_files_per_dir=max_files_per_dir, parallelize=parallelize)
+    valid_data = model.load_data_from_dirs(valid_data_dirs, is_test=False, max_files_per_dir=max_files_per_dir, parallelize=parallelize, valid=True)
     model.train_log("Begin Training.")
     # print("valid_data")
     # print(type(valid_data))
@@ -137,17 +138,19 @@ def run(arguments, tag_in_vcs=False) -> None:
     save_folder = arguments['SAVE_FOLDER']
 
     model_class = model_restore_helper.get_model_class_from_name(arguments['--model'])
-
     hyperparameters = model_class.get_default_hyperparameters()
-    run_name = make_run_id(arguments)
+
+    run_name = arguments.get('--run-name')
+    if run_name is None:
+        run_name = make_run_id(arguments)
 
     # make name of wandb run = run_id (Doesn't populate yet)
     hyperparameters['max_epochs'] = int(arguments.get('--max-num-epochs'))
 
     if testrun:
-        hyperparameters['max_epochs'] = 2
+        hyperparameters['max_epochs'] = 1
         if not max_files_per_dir:
-            max_files_per_dir = 1
+            max_files_per_dir = 2
 
     # override hyperparams if flag is passed
     hypers_override = arguments.get('--hypers-override')
@@ -167,15 +170,18 @@ def run(arguments, tag_in_vcs=False) -> None:
         os.environ["WANDB_MODE"] = 'dryrun'
     # save hyperparams to logging
     # must filter out type=set from logging when as that is not json serializable
-    wandb.init(name=run_name, config={k: v for k, v in hyperparameters.items() if not isinstance(v, set)})
+    # hvd.init()
+    # if(hvd.local_rank() == 0):
+    wandb.init(name=run_name, settings=wandb.Settings(start_method="thread"), group="GPT-2", config={k: v for k, v in hyperparameters.items() if not isinstance(v, set)})
+    print("model class")
     wandb.config.update({'model-class': arguments['--model'],
-                         'train_folder': str(train_data_dirs),
-                         'valid_folder': str(valid_data_dirs),
-                         'save_folder': str(save_folder),
-                         'test_folder': str(test_data_dirs),
-                         'CUDA_VISIBLE_DEVICES': os.environ.get("CUDA_VISIBLE_DEVICES", 'Not Set'),
-                         'run-name': arguments.get('--run-name'),
-                         'CLI-command': ' '.join(sys.argv)})
+                        'train_folder': str(train_data_dirs),
+                        'valid_folder': str(valid_data_dirs),
+                        'save_folder': str(save_folder),
+                        'test_folder': str(test_data_dirs),
+                        'CUDA_VISIBLE_DEVICES': os.environ.get("CUDA_VISIBLE_DEVICES", 'Not Set'),
+                        'run-name': arguments.get('--run-name'),
+                        'CLI-command': ' '.join(sys.argv)})
 
 
     if arguments.get('--evaluate-model'):
@@ -191,6 +197,7 @@ def run(arguments, tag_in_vcs=False) -> None:
 
     # only limit files in test run if `--testrun` flag is passed by user.
     if testrun:
+        print("EVALUATE")
         compute_evaluation_metrics(model_path, arguments, azure_info_path, valid_data_dirs, test_data_dirs, max_files_per_dir)
     else:
         compute_evaluation_metrics(model_path, arguments, azure_info_path, valid_data_dirs, test_data_dirs)

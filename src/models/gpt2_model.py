@@ -21,11 +21,12 @@ class GPT2Model(Model):
             hypers.update({f'{label}_{key}': value
                            for key, value in GPT2Encoder.get_default_hyperparameters().items()})
         model_hypers = {
+            'optimizer': 'SGD',
             'learning_rate': 5e-4,
             'code_use_subtokens': False,
             'code_mark_subtoken_end': False,
-            'batch_size':2,
-	    'max_epochs':2
+            'batch_size':12,
+	    'max_epochs':300
         }
         hypers.update(super().get_default_hyperparameters())
         hypers.update(model_hypers)

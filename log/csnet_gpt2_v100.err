@@ -1,0 +1,135 @@
+
+Currently Loaded Modules:
+  1) intel/18.0.2    6) xalt/2.9.6                  11) nccl/2.5.6    (g)
+  2) impi/18.0.2     7) TACC                        12) python3/3.7.0
+  3) git/2.24.1      8) tacc-singularity/3.7.2      13) phdf5/1.10.4
+  4) autotools/1.2   9) cuda/10.1              (g)
+  5) cmake/3.16.1   10) cudnn/7.6.5            (g)
+
+  Where:
+   g:  built for GPU
+
+ 
+
+2021-07-06 04:03:36.732060: W tensorflow/stream_executor/platform/default/dso_loader.cc:55] Could not load dynamic library 'libnvinfer.so.6'; dlerror: libnvinfer.so.6: cannot open shared object file: No such file or directory; LD_LIBRARY_PATH: /opt/apps/intel18/impi18_0/phdf5/1.10.4/x86_64/lib:/opt/apps/intel18/python3/3.7.0/lib:/opt/apps/cuda10_1/nccl/2.5.6/lib:/opt/apps/cuda10_1/cudnn/7.6.5/lib64:/opt/apps/cuda/10.1/lib64:/opt/intel/compilers_and_libraries_2018.2.199/linux/mpi/intel64/lib:/opt/intel/debugger_2018/libipt/intel64/lib:/opt/intel/debugger_2018/iga/lib:/opt/intel/compilers_and_libraries_2018.2.199/linux/daal/../tbb/lib/intel64_lin/gcc4.4:/opt/intel/compilers_and_libraries_2018.2.199/linux/daal/lib/intel64_lin:/opt/intel/compilers_and_libraries_2018.2.199/linux/tbb/lib/intel64/gcc4.7:/opt/intel/compilers_and_libraries_2018.2.199/linux/mkl/lib/intel64_lin:/opt/intel/compilers_and_libraries_2018.2.199/linux/compiler/lib/intel64_lin:/opt/intel/compilers_and_libraries_2018.2.199/linux/ipp/lib/intel64:/opt/intel/compilers_and_libraries_2018.2.199/linux/compiler/lib/intel64:/opt/apps/gcc/6.3.0/lib64:/opt/apps/gcc/6.3.0/lib:/opt/intel/compilers_and_libraries_2018.2.199/linux/mpi/intel64/lib:/opt/intel/compilers_and_libraries_2018.2.199/linux/mpi/mic/lib
+2021-07-06 04:03:36.732464: W tensorflow/stream_executor/platform/default/dso_loader.cc:55] Could not load dynamic library 'libnvinfer_plugin.so.6'; dlerror: libnvinfer_plugin.so.6: cannot open shared object file: No such file or directory; LD_LIBRARY_PATH: /opt/apps/intel18/impi18_0/phdf5/1.10.4/x86_64/lib:/opt/apps/intel18/python3/3.7.0/lib:/opt/apps/cuda10_1/nccl/2.5.6/lib:/opt/apps/cuda10_1/cudnn/7.6.5/lib64:/opt/apps/cuda/10.1/lib64:/opt/intel/compilers_and_libraries_2018.2.199/linux/mpi/intel64/lib:/opt/intel/debugger_2018/libipt/intel64/lib:/opt/intel/debugger_2018/iga/lib:/opt/intel/compilers_and_libraries_2018.2.199/linux/daal/../tbb/lib/intel64_lin/gcc4.4:/opt/intel/compilers_and_libraries_2018.2.199/linux/daal/lib/intel64_lin:/opt/intel/compilers_and_libraries_2018.2.199/linux/tbb/lib/intel64/gcc4.7:/opt/intel/compilers_and_libraries_2018.2.199/linux/mkl/lib/intel64_lin:/opt/intel/compilers_and_libraries_2018.2.199/linux/compiler/lib/intel64_lin:/opt/intel/compilers_and_libraries_2018.2.199/linux/ipp/lib/intel64:/opt/intel/compilers_and_libraries_2018.2.199/linux/compiler/lib/intel64:/opt/apps/gcc/6.3.0/lib64:/opt/apps/gcc/6.3.0/lib:/opt/intel/compilers_and_libraries_2018.2.199/linux/mpi/intel64/lib:/opt/intel/compilers_and_libraries_2018.2.199/linux/mpi/mic/lib
+2021-07-06 04:03:36.732484: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:30] Cannot dlopen some TensorRT libraries. If you would like to use Nvidia GPU with TensorRT, please make sure the missing libraries mentioned above are installed properly.
+2021-07-06 04:03:40.243102: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudart.so.10.1
+wandb: Currently logged in as: rifatarefin (use `wandb login --relogin` to force relogin)
+wandb: wandb version 0.10.33 is available!  To upgrade, please run:
+wandb:  $ pip install wandb --upgrade
+wandb: Tracking run with wandb version 0.10.30
+wandb: Syncing run selfatt-2021-07-06-04-03-44
+wandb: ⭐️ View project at https://wandb.ai/rifatarefin/CodeSearchNet
+wandb: 🚀 View run at https://wandb.ai/rifatarefin/CodeSearchNet/runs/2jp2hbwh
+wandb: Run data is saved locally in /work2/07782/marefin/maverick2/semantic-code-search/src/wandb/run-20210706_040345-2jp2hbwh
+wandb: Run `wandb offline` to turn off syncing.
+2021-07-06 04:03:45.493145: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcuda.so.1
+2021-07-06 04:03:45.549812: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1555] Found device 0 with properties: 
+pciBusID: 0000:af:00.0 name: Tesla P100-PCIE-16GB computeCapability: 6.0
+coreClock: 1.3285GHz coreCount: 56 deviceMemorySize: 15.90GiB deviceMemoryBandwidth: 681.88GiB/s
+2021-07-06 04:03:45.550678: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1555] Found device 1 with properties: 
+pciBusID: 0000:d8:00.0 name: Tesla P100-PCIE-16GB computeCapability: 6.0
+coreClock: 1.3285GHz coreCount: 56 deviceMemorySize: 15.90GiB deviceMemoryBandwidth: 681.88GiB/s
+2021-07-06 04:03:45.550709: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudart.so.10.1
+2021-07-06 04:03:45.625547: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcublas.so.10
+2021-07-06 04:03:45.669320: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcufft.so.10
+2021-07-06 04:03:45.676051: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcurand.so.10
+2021-07-06 04:03:45.755132: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcusolver.so.10
+2021-07-06 04:03:45.764781: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcusparse.so.10
+2021-07-06 04:03:45.908938: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudnn.so.7
+2021-07-06 04:03:45.912284: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1697] Adding visible gpu devices: 0, 1
+2021-07-06 04:03:45.916128: I tensorflow/core/platform/cpu_feature_guard.cc:142] Your CPU supports instructions that this TensorFlow binary was not compiled to use: AVX2 AVX512F FMA
+2021-07-06 04:03:45.944467: I tensorflow/core/platform/profile_utils/cpu_utils.cc:94] CPU Frequency: 2100000000 Hz
+2021-07-06 04:03:45.948212: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x946daa0 initialized for platform Host (this does not guarantee that XLA will be used). Devices:
+2021-07-06 04:03:45.948239: I tensorflow/compiler/xla/service/service.cc:176]   StreamExecutor device (0): Host, Default Version
+2021-07-06 04:03:46.076900: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x94d43a0 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+2021-07-06 04:03:46.076941: I tensorflow/compiler/xla/service/service.cc:176]   StreamExecutor device (0): Tesla P100-PCIE-16GB, Compute Capability 6.0
+2021-07-06 04:03:46.078144: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1555] Found device 0 with properties: 
+pciBusID: 0000:af:00.0 name: Tesla P100-PCIE-16GB computeCapability: 6.0
+coreClock: 1.3285GHz coreCount: 56 deviceMemorySize: 15.90GiB deviceMemoryBandwidth: 681.88GiB/s
+2021-07-06 04:03:46.078209: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudart.so.10.1
+2021-07-06 04:03:46.078239: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcublas.so.10
+2021-07-06 04:03:46.078255: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcufft.so.10
+2021-07-06 04:03:46.078271: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcurand.so.10
+2021-07-06 04:03:46.078287: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcusolver.so.10
+2021-07-06 04:03:46.078302: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcusparse.so.10
+2021-07-06 04:03:46.078317: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudnn.so.7
+2021-07-06 04:03:46.079891: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1697] Adding visible gpu devices: 0
+2021-07-06 04:03:53.257703: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1096] Device interconnect StreamExecutor with strength 1 edge matrix:
+2021-07-06 04:03:53.257746: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1102]      0 
+2021-07-06 04:03:53.257756: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] 0:   N 
+2021-07-06 04:03:53.260897: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1241] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 14608 MB memory) -> physical GPU (device: 0, name: Tesla P100-PCIE-16GB, pci bus id: 0000:af:00.0, compute capability: 6.0)
+WARNING:tensorflow:From /home1/07782/marefin/.local/lib/python3.7/site-packages/tensorflow_core/python/ops/resource_variable_ops.py:1635: calling BaseResourceVariable.__init__ (from tensorflow.python.ops.resource_variable_ops) with constraint is deprecated and will be removed in a future version.
+Instructions for updating:
+If using Keras pass *_constraint arguments to layers.
+WARNING:tensorflow:Large dropout rate: 0.9 (>0.5). In TensorFlow 2.x, dropout() uses dropout rate instead of keep_prob. Please ensure that this is intended.
+WARNING:tensorflow:From /work2/07782/marefin/maverick2/semantic-code-search/src/encoders/utils/bert_self_attention_v2.py:643: dense (from tensorflow.python.layers.core) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use keras.layers.Dense instead.
+WARNING:tensorflow:From /home1/07782/marefin/.local/lib/python3.7/site-packages/tensorflow_core/python/layers/core.py:187: Layer.apply (from tensorflow.python.keras.engine.base_layer) is deprecated and will be removed in a future version.
+Instructions for updating:
+Please use `layer.__call__` method instead.
+WARNING:tensorflow:Large dropout rate: 0.9 (>0.5). In TensorFlow 2.x, dropout() uses dropout rate instead of keep_prob. Please ensure that this is intended.
+WARNING:tensorflow:Large dropout rate: 0.9 (>0.5). In TensorFlow 2.x, dropout() uses dropout rate instead of keep_prob. Please ensure that this is intended.
+WARNING:tensorflow:Large dropout rate: 0.9 (>0.5). In TensorFlow 2.x, dropout() uses dropout rate instead of keep_prob. Please ensure that this is intended.
+WARNING:tensorflow:Large dropout rate: 0.9 (>0.5). In TensorFlow 2.x, dropout() uses dropout rate instead of keep_prob. Please ensure that this is intended.
+2021-07-06 04:10:09.326148: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcublas.so.10
+2021-07-06 04:10:09.747810: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudnn.so.7
+wandb: WARNING Saving files without folders. If you want to preserve sub directories pass base_path to wandb.save, i.e. wandb.save("/mnt/folder/file.h5", base_path="/mnt")
+wandb: WARNING Saving files without folders. If you want to preserve sub directories pass base_path to wandb.save, i.e. wandb.save("/mnt/folder/file.h5", base_path="/mnt")
+2021-07-06 14:46:39.439465: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1555] Found device 0 with properties: 
+pciBusID: 0000:af:00.0 name: Tesla P100-PCIE-16GB computeCapability: 6.0
+coreClock: 1.3285GHz coreCount: 56 deviceMemorySize: 15.90GiB deviceMemoryBandwidth: 681.88GiB/s
+2021-07-06 14:46:39.439638: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudart.so.10.1
+2021-07-06 14:46:39.439726: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcublas.so.10
+2021-07-06 14:46:39.439746: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcufft.so.10
+2021-07-06 14:46:39.439767: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcurand.so.10
+2021-07-06 14:46:39.439787: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcusolver.so.10
+2021-07-06 14:46:39.439804: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcusparse.so.10
+2021-07-06 14:46:39.439822: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudnn.so.7
+2021-07-06 14:46:39.440484: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1697] Adding visible gpu devices: 0
+2021-07-06 14:46:39.440528: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1096] Device interconnect StreamExecutor with strength 1 edge matrix:
+2021-07-06 14:46:39.440537: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1102]      0 
+2021-07-06 14:46:39.440544: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] 0:   N 
+2021-07-06 14:46:39.441238: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1241] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 14608 MB memory) -> physical GPU (device: 0, name: Tesla P100-PCIE-16GB, pci bus id: 0000:af:00.0, compute capability: 6.0)
+wandb: Waiting for W&B process to finish, PID 0
+wandb: Program ended successfully.
+wandb: - 44.22MB of 44.22MB uploaded (0.00MB deduped)wandb: \ 44.22MB of 44.22MB uploaded (0.00MB deduped)wandb: | 44.22MB of 44.22MB uploaded (0.00MB deduped)wandb: / 44.22MB of 44.23MB uploaded (0.00MB deduped)wandb: - 44.23MB of 44.23MB uploaded (0.00MB deduped)wandb: \ 44.23MB of 44.23MB uploaded (0.00MB deduped)wandb: | 44.23MB of 44.23MB uploaded (0.00MB deduped)wandb: / 44.23MB of 44.23MB uploaded (0.00MB deduped)wandb: - 44.23MB of 44.23MB uploaded (0.00MB deduped)wandb:                                                                                
+wandb: Find user logs for this run at: /work2/07782/marefin/maverick2/semantic-code-search/src/wandb/run-20210706_040345-2jp2hbwh/logs/debug.log
+wandb: Find internal logs for this run at: /work2/07782/marefin/maverick2/semantic-code-search/src/wandb/run-20210706_040345-2jp2hbwh/logs/debug-internal.log
+wandb: Run summary:
+wandb:                         train-loss 3.306
+wandb:                          train-mrr 0.38123
+wandb:                           _runtime 38706
+wandb:                         _timestamp 1625600931
+wandb:                              _step 1167
+wandb:                              epoch 82
+wandb:                     train-time-sec 451.75481
+wandb:                           val-loss 4.4923
+wandb:                            val-mrr 0.19428
+wandb:                       val-time-sec 6.64545
+wandb:                  best_val_mrr_loss 4.48403
+wandb:                       best_val_mrr 0.1963
+wandb:                         best_epoch 77
+wandb:            Test-All MRR (bs=1,000) 0.1048
+wandb:    FuncNameTest-All MRR (bs=1,000) 0.10641
+wandb:      Validation-All MRR (bs=1,000) 0.10607
+wandb:           Test-java MRR (bs=1,000) 0.1048
+wandb:   FuncNameTest-java MRR (bs=1,000) 0.10641
+wandb:     Validation-java MRR (bs=1,000) 0.10607
+wandb: Run history:
+wandb:       train-loss █▇▆▅▅▄▅▄▃▄▄▃▃▂▃▃▂▃▃▂▃▂▂▂▂▂▂▂▂▁▁▁▃▂▂▂▂▂▁▁
+wandb:         _runtime ▁▁▁▁▂▂▂▂▂▃▃▃▃▃▃▄▄▄▄▄▅▅▅▅▅▅▆▆▆▆▆▇▇▇▇▇▇███
+wandb:       _timestamp ▁▁▁▁▂▂▂▂▂▃▃▃▃▃▃▄▄▄▄▄▅▅▅▅▅▅▆▆▆▆▆▇▇▇▇▇▇███
+wandb:            _step ▁▁▁▁▂▂▂▂▂▃▃▃▃▃▃▄▄▄▄▄▅▅▅▅▅▅▆▆▆▆▆▇▇▇▇▇▇███
+wandb:            epoch ▁▁▁▂▂▂▂▂▂▃▃▃▃▃▃▄▄▄▄▄▅▅▅▅▅▅▆▆▆▆▆▇▇▇▇▇▇███
+wandb:        train-mrr ▁▃▃▃▄▄▅▅▅▅▆▆▆▆▆▆▆▇▇▇▇▇▇▇▇▇▇▇▇███████████
+wandb:   train-time-sec █▃▂▁▁▄▂▁▂▄▂▂▃▂▂▁▁▁▁▁▁▁▂▂▁▁▁▁▂▂▂▂▂▂▁▂▁▁▂▁
+wandb:         val-loss █▆▅▅▅▄▄▄▄▃▃▃▃▃▂▂▂▂▂▂▂▂▂▂▂▁▂▂▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:          val-mrr ▁▂▃▃▄▄▄▅▅▅▅▆▆▆▆▆▆▆▇▇▇▇▇▇▇▇▇▇▇▇██████████
+wandb:     val-time-sec █▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb: 
+wandb: Synced 5 W&B file(s), 6 media file(s), 3 artifact file(s) and 3 other file(s)
+wandb: 
+wandb: Synced selfatt-2021-07-06-04-03-44: https://wandb.ai/rifatarefin/CodeSearchNet/runs/2jp2hbwh

@@ -12,7 +12,11 @@ from dpu_utils.codeutils import split_identifier_into_parts
 from dpu_utils.mlutils import Vocabulary
 
 from .encoder import Encoder, QueryType
+from transformers import GPT2Tokenizer
 
+cache_dir = "../resources/hugging_face/gpt2/"                             #rifat
+tokenizer = GPT2Tokenizer.from_pretrained("microsoft/CodeGPT-small-java-adaptedGPT2", cache_dir=cache_dir)
+tokenizer.pad_token = tokenizer.eos_token
 
 class SeqEncoder(Encoder):
     @classmethod
@@ -47,6 +51,7 @@ class SeqEncoder(Encoder):
         Creates placeholders "tokens" for sequence encoders.
         """
         super()._make_placeholders()
+        print(self.get_hyper('max_num_tokens'))
         self.placeholders['tokens'] = \
             tf.compat.v1.placeholder(tf.int32,
                            shape=[None, self.get_hyper('max_num_tokens')],
@@ -147,7 +152,7 @@ class SeqEncoder(Encoder):
                 # In the code, replace the function name with the out-of-vocab token everywhere it appears:
                 data_holder[QueryType.FUNCTION_NAME.value] = [Vocabulary.get_unk() if token == function_name else token
                                                               for token in data_to_load]
-
+        
         # Sub-tokenize, convert, and pad both versions:
         for key, data in data_holder.items():
             if not data:
@@ -162,14 +167,21 @@ class SeqEncoder(Encoder):
             tokens, tokens_mask = \
                 convert_and_pad_token_sequence(metadata['token_vocab'], list(data),
                                                hyperparameters[f'{encoder_label}_max_num_tokens'])
+
+            # output_tensor_size = hyperparameters[f'{encoder_label}_max_num_tokens']
+            # res = tokenizer(data, truncation=True, max_length = output_tensor_size, is_pretokenized=True, return_length = True, padding='max_length', return_tensors='np')
+            # tokens = res['input_ids'].flatten()
+            # tokens_mask = res['attention_mask'].flatten()
+            # print(tokens.shape)
             # Note that we share the result_holder with different encoders, and so we need to make our identifiers
             # unique-ish
             result_holder[f'{encoder_label}_tokens_{key}'] = tokens
             result_holder[f'{encoder_label}_tokens_mask_{key}'] = tokens_mask
-            result_holder[f'{encoder_label}_tokens_length_{key}'] = int(np.sum(tokens_mask))
+            result_holder[f'{encoder_label}_tokens_length_{key}'] = int(np.sum(tokens_mask))           #res['length'] # 
 
         if result_holder[f'{encoder_label}_tokens_mask_{QueryType.DOCSTRING.value}'] is None or \
                 int(np.sum(result_holder[f'{encoder_label}_tokens_mask_{QueryType.DOCSTRING.value}'])) == 0:
+            print("Test-False")
             return False
 
         return True

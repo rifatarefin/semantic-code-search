@@ -15,11 +15,10 @@ from dpu_utils.utils import RichPath
 
 from utils.py_utils import run_jobs_in_parallel
 from encoders import Encoder, QueryType
-
+import horovod.tensorflow as hvd  #rifat
 
 LoadedSamples = Dict[str, List[Dict[str, Any]]]
 SampleId = Tuple[str, int]
-
 
 class RepresentationType(Enum):
     CODE = auto()
@@ -27,10 +26,17 @@ class RepresentationType(Enum):
 
 
 def get_data_files_from_directory(data_dirs: List[RichPath],
-                                  max_files_per_dir: Optional[int] = None) -> List[RichPath]:
+                                  max_files_per_dir: Optional[int] = None, valid: bool = False) -> List[RichPath]:
     files = []  # type: List[str]
     for data_dir in data_dirs:
-        dir_files = data_dir.get_filtered_files_in_dir('*.jsonl.gz')
+        if valid == True:
+            pattern = '*.jsonl.gz'
+        else:
+            # pattern = str(hvd.rank())+'*.jsonl.gz'                                                  #rifat
+            pattern = '*.jsonl.gz'
+        dir_files = data_dir.get_filtered_files_in_dir(pattern)
+        print("JSON"+str(hvd.rank()))
+        print(dir_files)
         if max_files_per_dir:
             dir_files = sorted(dir_files)[:int(max_files_per_dir)]
         files += dir_files
@@ -106,8 +112,8 @@ class Model(ABC):
                 'query_random_token_frequency': 0.,
 
                 # Maximal number of tokens considered to compute a representation for code/query:
-                'code_max_num_tokens': 1024,
-                'query_max_num_tokens': 1024,
+                'code_max_num_tokens': 200,
+                'query_max_num_tokens': 30,
                }
 
     def __init__(self,
@@ -145,15 +151,24 @@ class Model(ABC):
         else:
             self.__log_save_dir = log_save_dir  # type: str
 
-        config = tf.compat.v1.ConfigProto()
-        config.gpu_options.allow_growth = True
-        if "gpu_device_id" in self.hyperparameters:
-            config.gpu_options.visible_device_list = str(self.hyperparameters["gpu_device_id"])
-
+        
+        hvd.init()                              #rifat
+        print("hvd inintialized")
+        # self.config = tf.compat.v1.ConfigProto()
+        # self.config.gpu_options.visible_device_list = str(hvd.local_rank())
+        # self.config.gpu_options.allow_growth = True
+        # if "gpu_device_id" in self.hyperparameters:
+        #     config.gpu_options.visible_device_list = str(self.hyperparameters["gpu_device_id"])    #rifat
+        gpus = tf.config.experimental.list_physical_devices('GPU')
+        print(gpus)
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+        if gpus:
+            tf.config.experimental.set_visible_devices(gpus[hvd.local_rank()], 'GPU')
         graph = tf.Graph()
-        self.__sess = tf.compat.v1.Session(graph=graph, config=config)
-
-        # save directory as tensorboard.
+        
+        self.__sess = tf.compat.v1.Session(graph=graph) #, config=self.config)
+        
         self.__tensorboard_dir = log_save_dir
 
     @property
@@ -250,26 +265,26 @@ class Model(ABC):
                                         shape=[self.hyperparameters['batch_size']],
                                         name='sample_loss_weights')
 
-        # with tf.compat.v1.variable_scope("code_encoder"):
-        with tf.device('/gpu:0'):
+        with tf.compat.v1.variable_scope("code_encoder"):   #, reuse = tf.compat.v1.AUTO_REUSE):                                  #rifat
+        # with tf.compat.v1.device('/GPU:0'):
             language_encoders = []
             for (language, language_metadata) in sorted(self.__per_code_language_metadata.items(), key=lambda kv: kv[0]):
-                # with tf.compat.v1.variable_scope(language):
-                self.__code_encoders[language] = self.__code_encoder_type(label="code",
-                                                                          hyperparameters=self.hyperparameters,
-                                                                          metadata=language_metadata)
-                language_encoders.append(self.__code_encoders[language].make_model(is_train=is_train))
+                with tf.compat.v1.variable_scope(language):
+                    self.__code_encoders[language] = self.__code_encoder_type(label="code",
+                                                                            hyperparameters=self.hyperparameters,
+                                                                            metadata=language_metadata)
+                    language_encoders.append(self.__code_encoders[language].make_model(is_train=is_train))
 
             #print(language_encoders)
             self.ops['code_representations'] = tf.concat(language_encoders, axis=0)
-        with tf.device('/gpu:1'):
-        # with tf.compat.v1.variable_scope("query_encoder"):
+        # with tf.compat.v1.device('/GPU:1'):
+        with tf.compat.v1.variable_scope("query_encoder"):  #, reuse = tf.compat.v1.AUTO_REUSE):                                 #rifat
             self.__query_encoder = self.__query_encoder_type(label="query",
                                                              hyperparameters=self.hyperparameters,
                                                              metadata=self.__query_metadata)
             self.ops['query_representations'] = self.__query_encoder.make_model(is_train=is_train)
 
-            code_representation_size = next(iter(self.__code_encoders.values())).output_representation_size
+        code_representation_size = next(iter(self.__code_encoders.values())).output_representation_size
         query_representation_size = self.__query_encoder.output_representation_size
         assert code_representation_size == query_representation_size, \
             f'Representations produced for code ({code_representation_size}) and query ({query_representation_size}) cannot differ!'
@@ -367,16 +382,17 @@ class Model(ABC):
         """
         optimizer_name = self.hyperparameters['optimizer'].lower()
         if optimizer_name == 'sgd':
-            optimizer = tf.compat.v1.train.GradientDescentOptimizer(learning_rate=self.hyperparameters['learning_rate'])
+            optimizer = tf.compat.v1.train.GradientDescentOptimizer(learning_rate=self.hyperparameters['learning_rate'] * hvd.size()) #rifat
         elif optimizer_name == 'rmsprop':
             optimizer = tf.compat.v1.train.RMSPropOptimizer(learning_rate=self.hyperparameters['learning_rate'],
                                                   decay=self.hyperparameters['learning_rate_decay'],
                                                   momentum=self.hyperparameters['momentum'])
         elif optimizer_name == 'adam':
-            optimizer = tf.compat.v1.train.AdamOptimizer(learning_rate=self.hyperparameters['learning_rate'])
+            optimizer = tf.compat.v1.train.AdamOptimizer(learning_rate=self.hyperparameters['learning_rate'] * hvd.size())  #rifat
         else:
             raise Exception('Unknown optimizer "%s".' % (self.hyperparameters['optimizer']))
-
+        
+        self.optimizer = hvd.DistributedOptimizer(optimizer)    #rifat
         # Calculate and clip gradients
         trainable_vars = self.sess.graph.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES)
         gradients = tf.gradients(ys=self.ops['loss'], xs=trainable_vars)
@@ -393,7 +409,7 @@ class Model(ABC):
                                         dtype=tf.float32)
 
             pruned_clipped_gradients.append((gradient, trainable_var))
-        self.ops['train_step'] = optimizer.apply_gradients(pruned_clipped_gradients)
+        self.ops['train_step'] = self.optimizer.apply_gradients(pruned_clipped_gradients)
 
     def load_metadata(self, data_dirs: List[RichPath], max_files_per_dir: Optional[int] = None, parallelize: bool = True) -> None:
         raw_query_metadata_list = []
@@ -455,8 +471,8 @@ class Model(ABC):
     def load_data_from_dirs(self, data_dirs: List[RichPath], is_test: bool,
                             max_files_per_dir: Optional[int] = None,
                             return_num_original_samples: bool = False,
-                            parallelize: bool = True) -> Union[LoadedSamples, Tuple[LoadedSamples, int]]:
-        return self.load_data_from_files(data_files=list(get_data_files_from_directory(data_dirs, max_files_per_dir)),
+                            parallelize: bool = True, valid: bool = False) -> Union[LoadedSamples, Tuple[LoadedSamples, int]]:
+        return self.load_data_from_files(data_files=list(get_data_files_from_directory(data_dirs, max_files_per_dir, valid)),
                                          is_test=is_test,
                                          return_num_original_samples=return_num_original_samples,
                                          parallelize=parallelize)
@@ -473,8 +489,10 @@ class Model(ABC):
                          for data_file in data_files]
 
         if parallelize:
+            print("Before")
             with multiprocessing.Pool() as pool:
                 per_file_results = pool.starmap(parse_data_file, tasks_as_args)
+            print("After")
         else:
             per_file_results = [parse_data_file(*task_args) for task_args in tasks_as_args]
         samples: DefaultDict[str, List] = defaultdict(list)
@@ -717,8 +735,8 @@ class Model(ABC):
         printed_one_line = False
         for minibatch_counter, (batch_data_dict, samples_in_batch, samples_used_so_far, _) in enumerate(data_generator):
             if not quiet or (minibatch_counter % 100) == 99:
-                print("%s: Batch %5i (has %i samples). Processed %i samples. Loss so far: %.4f.  MRR so far: %.4f "
-                      % (epoch_name, minibatch_counter, samples_in_batch,
+                print("%s: Batch %5i (has %i samples). Rank %i, Processed %i samples. Loss so far: %.4f.  MRR so far: %.4f "
+                      % (epoch_name, minibatch_counter, samples_in_batch, hvd.rank(),
                          samples_used_so_far - samples_in_batch, loss, mrr),
                       flush=True,
                       end="\r" if not quiet else '\n')
@@ -727,7 +745,18 @@ class Model(ABC):
             if is_train:
                 ops_to_run['train_step'] = self.__ops['train_step']
             #print(ops_to_run)
+            # for hook in self.hooks:
+            #     hook.before_run()
             op_results = self.__sess.run(ops_to_run, feed_dict=batch_data_dict)
+
+            if minibatch_counter == 0 and (" 0" in epoch_name):     
+                                                                                #rifat
+                
+                print("BROADCAST "+str(hvd.rank()))
+                hvd.broadcast_variables(self.__sess.graph.get_collection(tf.compat.v1.GraphKeys.GLOBAL_VARIABLES), root_rank=0)
+                hvd.broadcast_variables(self.optimizer.variables(), root_rank=0)
+            # for hook in self.hooks:
+            #     hook.after_run()
             assert not np.isnan(op_results['loss'])
 
             epoch_loss += op_results['loss'] * samples_in_batch
@@ -763,11 +792,13 @@ class Model(ABC):
               quiet: bool = False,
               resume: bool = False) -> RichPath:
         model_path = RichPath.create(self.model_save_path, azure_info_path)
-        if 'gpt2' in self.model_save_path:
-            session = self.sess
-        else:
-            session = self.__sess.as_default()
+        # if 'gpt2' in self.model_save_path:
+        #     session = self.sess
+        # else:
+        session = self.__sess   #.as_default()
 
+                               #rifat
+        
         with session:
         # with tf.compat.v1.Session() as sess:
             tf.compat.v1.set_random_seed(self.hyperparameters['seed'])
@@ -778,12 +809,15 @@ class Model(ABC):
 
             if resume:
                 # Variables should have been restored.
+                
                 best_val_mrr_loss, best_val_mrr, _ = self.__run_epoch_in_batches(valid_data, "RESUME (valid)", is_train=False, quiet=quiet)
                 self.train_log('Validation Loss on Resume: %.6f' % (best_val_mrr_loss,))
             else:
                 init_op = tf.compat.v1.variables_initializer(self.__sess.graph.get_collection(tf.compat.v1.GraphKeys.GLOBAL_VARIABLES))
                 self.__sess.run(init_op)
-                self.save(model_path)
+                # hvd.broadcast_variables(self.__sess.graph.get_collection(tf.compat.v1.GraphKeys.GLOBAL_VARIABLES), root_rank=0)
+                if hvd.rank() == 0:                                            #rifat
+                    self.save(model_path) 
                 best_val_mrr = 0
             no_improvement_counter = 0
             epoch_number = 0
@@ -793,13 +827,13 @@ class Model(ABC):
                 self.train_log('==== Epoch %i ====' % (epoch_number,))
 
                 # run training loop and log metrics
-                train_loss, train_mrr, train_time = self.__run_epoch_in_batches(train_data, "%i (train)" % (epoch_number,),
+                train_loss, train_mrr, train_time = self.__run_epoch_in_batches(train_data, " %i (train)" % (epoch_number,),
                                                                                 is_train=True,
                                                                                 quiet=quiet)
                 self.train_log(' Training Loss: %.6f' % (train_loss,))
 
                 # run validation calcs and log metrics
-                val_loss, val_mrr, val_time = self.__run_epoch_in_batches(valid_data, "%i (valid)" % (epoch_number,),
+                val_loss, val_mrr, val_time = self.__run_epoch_in_batches(valid_data, " %i (valid)" % (epoch_number,),
                                                                           is_train=False,
                                                                           quiet=quiet)
                 self.train_log(' Validation:  Loss: %.6f | MRR: %.6f' % (val_loss, val_mrr,))
@@ -834,19 +868,25 @@ class Model(ABC):
                     wandb.run.summary['best_epoch'] = epoch_number
 
                     no_improvement_counter = 0
-                    self.save(model_path)
+                    if hvd.rank() == 0:                                 #rifat
+                        self.save(model_path)
                     self.train_log("  Best result so far -- saved model as '%s'." % (model_path,))
                 else:
                     # record epochs without improvement for early stopping
+                    # if hvd.rank() == 0:
                     no_improvement_counter += 1
                 epoch_number += 1
 
             log_path = os.path.join(self.__log_save_dir,
                                     f'{self.run_name}.train_log')
-            wandb.save(log_path)
+            if hvd.rank() ==  0:                                    #rifat
+                wandb.save(log_path)
             tf.io.write_graph(self.__sess.graph,
                               logdir=wandb.run.dir,
                               name=f'{self.run_name}-graph.pbtxt')
+
+            # for hook in self.hooks:
+            #     hook.end()
 
         self.__summary_writer.close()
         return model_path
@@ -948,7 +988,7 @@ class Model(ABC):
                     is_test=True)
             else:
                 return False
-        print("get_code_representations")
+        # print("get_code_representations")
         return self.__compute_representations_batched(code_data,
                                                       data_loader_fn=code_data_loader,
                                                       model_representation_op=self.__ops['code_representations'],
