@@ -25,3 +25,4 @@ resources/
 /src/wandb/run-*
 /src/wandb/debug.log
 *.html
+.*
