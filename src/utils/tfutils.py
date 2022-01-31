@@ -4,7 +4,7 @@ import numpy as np
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
 
-from tensorflow.compat.v1.python.ops.init_ops import Initializer
+from tensorflow.python.ops.init_ops import Initializer
 
 from dpu_utils.mlutils import Vocabulary
 
