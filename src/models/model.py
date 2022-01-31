@@ -11,6 +11,8 @@ from typing import List, Dict, Any, Iterable, Tuple, Optional, Union, Callable, 
 import numpy as np
 import wandb
 import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
+
 from dpu_utils.utils import RichPath
 
 from utils.py_utils import run_jobs_in_parallel

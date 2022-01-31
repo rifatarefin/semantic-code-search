@@ -1,6 +1,8 @@
 from typing import Dict, Any, Optional, Type
 
 import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
+
 from dpu_utils.utils import RichPath
 
 from models import Model, NeuralBoWModel, RNNModel, SelfAttentionModel, ConvolutionalModel, ConvSelfAttentionModel
