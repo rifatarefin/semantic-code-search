@@ -1,6 +1,6 @@
 from typing import Dict, Any
 
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 
 from .masked_seq_encoder import MaskedSeqEncoder
 from utils.tfutils import get_activation, pool_sequence_embedding

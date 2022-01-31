@@ -7,7 +7,7 @@ import re
 from utils.bpevocabulary import BpeVocabulary
 from utils.tfutils import convert_and_pad_token_sequence
 
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 from dpu_utils.codeutils import split_identifier_into_parts
 from dpu_utils.mlutils import Vocabulary
 

@@ -1,8 +1,8 @@
 from typing import List, Tuple, Dict, Any, Optional, Union
 
 import numpy as np
-import tensorflow as tf
-from tensorflow.python.ops.init_ops import Initializer
+import tensorflow.compat.v1 as tf
+from tensorflow.compat.v1.python.ops.init_ops import Initializer
 
 from dpu_utils.mlutils import Vocabulary
 

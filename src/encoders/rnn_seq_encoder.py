@@ -1,6 +1,6 @@
 from typing import Dict, Any, Union, Tuple
 
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 
 from .seq_encoder import SeqEncoder
 from utils.tfutils import write_to_feed_dict, pool_sequence_embedding

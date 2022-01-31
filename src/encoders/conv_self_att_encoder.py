@@ -1,6 +1,6 @@
 from typing import Dict, Any
 
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 
 from .utils.bert_self_attention import BertConfig, BertModel
 from .masked_seq_encoder import MaskedSeqEncoder

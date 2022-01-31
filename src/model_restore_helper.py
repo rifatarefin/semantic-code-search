@@ -1,6 +1,6 @@
 from typing import Dict, Any, Optional, Type
 
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 from dpu_utils.utils import RichPath
 
 from models import Model, NeuralBoWModel, RNNModel, SelfAttentionModel, ConvolutionalModel, ConvSelfAttentionModel
