@@ -12,6 +12,7 @@ import numpy as np
 import wandb
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
+import horovod.tensorflow as hvd  #rifat
 
 from dpu_utils.utils import RichPath
 
@@ -146,11 +147,13 @@ class Model(ABC):
             self.__log_save_dir = os.environ.get('PHILLY_LOG_DIRECTORY', default='.')  # type: str
         else:
             self.__log_save_dir = log_save_dir  # type: str
+        hvd.init()                                          #rifat
 
         config = tf.ConfigProto()
         config.gpu_options.allow_growth = True
-        if "gpu_device_id" in self.hyperparameters:
-            config.gpu_options.visible_device_list = str(self.hyperparameters["gpu_device_id"])
+        config.gpu_options.visible_device_list = str(hvd.local_rank())
+        # if "gpu_device_id" in self.hyperparameters:
+        #     config.gpu_options.visible_device_list = str(self.hyperparameters["gpu_device_id"])
 
         graph = tf.Graph()
         self.__sess = tf.Session(graph=graph, config=config)
@@ -235,6 +238,7 @@ class Model(ABC):
             if is_train:
                 self._make_training_step()
                 self.__summary_writer = tf.summary.FileWriter(self.__tensorboard_dir, self.__sess.graph)
+            self.bcast = hvd.broadcast_global_variables(0)                                              #rifat
 
     def _make_model(self, is_train: bool) -> None:
         """
@@ -365,16 +369,17 @@ class Model(ABC):
         """
         optimizer_name = self.hyperparameters['optimizer'].lower()
         if optimizer_name == 'sgd':
-            optimizer = tf.train.GradientDescentOptimizer(learning_rate=self.hyperparameters['learning_rate'])
+            optimizer = tf.train.GradientDescentOptimizer(learning_rate=self.hyperparameters['learning_rate'] * hvd.size()) #rifat
         elif optimizer_name == 'rmsprop':
             optimizer = tf.train.RMSPropOptimizer(learning_rate=self.hyperparameters['learning_rate'],
                                                   decay=self.hyperparameters['learning_rate_decay'],
                                                   momentum=self.hyperparameters['momentum'])
         elif optimizer_name == 'adam':
-            optimizer = tf.train.AdamOptimizer(learning_rate=self.hyperparameters['learning_rate'])
+            optimizer = tf.train.AdamOptimizer(learning_rate=self.hyperparameters['learning_rate'] * hvd.size())  #rifat
         else:
             raise Exception('Unknown optimizer "%s".' % (self.hyperparameters['optimizer']))
 
+        self.optimizer = hvd.DistributedOptimizer(optimizer)    #rifat
         # Calculate and clip gradients
         trainable_vars = self.sess.graph.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
         gradients = tf.gradients(self.ops['loss'], trainable_vars)
@@ -391,7 +396,7 @@ class Model(ABC):
                                         dtype=tf.float32)
 
             pruned_clipped_gradients.append((gradient, trainable_var))
-        self.ops['train_step'] = optimizer.apply_gradients(pruned_clipped_gradients)
+        self.ops['train_step'] = self.optimizer.apply_gradients(pruned_clipped_gradients)
 
     def load_metadata(self, data_dirs: List[RichPath], max_files_per_dir: Optional[int] = None, parallelize: bool = True) -> None:
         raw_query_metadata_list = []
@@ -715,8 +720,8 @@ class Model(ABC):
         printed_one_line = False
         for minibatch_counter, (batch_data_dict, samples_in_batch, samples_used_so_far, _) in enumerate(data_generator):
             if not quiet or (minibatch_counter % 100) == 99:
-                print("%s: Batch %5i (has %i samples). Processed %i samples. Loss so far: %.4f.  MRR so far: %.4f "
-                      % (epoch_name, minibatch_counter, samples_in_batch,
+                print("%s: Batch %5i (has %i samples). Rank %i, Processed %i samples. Loss so far: %.4f.  MRR so far: %.4f "
+                      % (epoch_name, minibatch_counter, samples_in_batch, hvd.rank(),
                          samples_used_so_far - samples_in_batch, loss, mrr),
                       flush=True,
                       end="\r" if not quiet else '\n')
@@ -743,8 +748,8 @@ class Model(ABC):
         used_time = time.time() - epoch_start
         if printed_one_line:
             print("\r\x1b[K", end='')
-        self.train_log("  Epoch %s took %.2fs [processed %s samples/second]"
-                       % (epoch_name, used_time, int(samples_used_so_far/used_time)))
+        self.train_log("  Epoch %s, Rank %i, took %.2fs [processed %s samples/second]"
+                       % (epoch_name, hvd.rank(), used_time, int(samples_used_so_far/used_time)))
 
         return loss, mrr, used_time
 
@@ -774,8 +779,11 @@ class Model(ABC):
             else:
                 init_op = tf.variables_initializer(self.__sess.graph.get_collection(tf.GraphKeys.GLOBAL_VARIABLES))
                 self.__sess.run(init_op)
-                self.save(model_path)
                 best_val_mrr = 0
+                if hvd.rank() == 0:                                                 #rifat
+                    self.save(model_path)
+
+            self.bcast.run()                                 #rifat
             no_improvement_counter = 0
             epoch_number = 0
             while (epoch_number < self.hyperparameters['max_epochs']
@@ -789,55 +797,58 @@ class Model(ABC):
                                                                                 quiet=quiet)
                 self.train_log(' Training Loss: %.6f' % (train_loss,))
 
-                # run validation calcs and log metrics
-                val_loss, val_mrr, val_time = self.__run_epoch_in_batches(valid_data, "%i (valid)" % (epoch_number,),
-                                                                          is_train=False,
-                                                                          quiet=quiet)
-                self.train_log(' Validation:  Loss: %.6f | MRR: %.6f' % (val_loss, val_mrr,))
+                if hvd.rank() == 0:
+                    # run validation calcs and log metrics
+                    val_loss, val_mrr, val_time = self.__run_epoch_in_batches(valid_data, "%i (valid)" % (epoch_number,),
+                                                                            is_train=False,
+                                                                            quiet=quiet)
+                    self.train_log(' Validation:  Loss: %.6f | MRR: %.6f' % (val_loss, val_mrr,))
 
-                log = {'epoch': epoch_number,
-                       'train-loss': train_loss,
-                       'train-mrr': train_mrr,
-                       'train-time-sec': train_time,
-                       'val-loss': val_loss,
-                       'val-mrr': val_mrr,
-                       'val-time-sec': val_time}
+                    log = {'epoch': epoch_number,
+                        'train-loss': train_loss,
+                        'train-mrr': train_mrr,
+                        'train-time-sec': train_time,
+                        'val-loss': val_loss,
+                        'val-mrr': val_mrr,
+                        'val-time-sec': val_time}
+                    
+                    # log to wandb
+                    wandb.log(log)
                 
-                # log to wandb
-                wandb.log(log)
-            
-                # log to tensorboard
-                for key in log:
-                    if key != 'epoch':
-                        self._log_tensorboard_scalar(tag=key, 
-                                                     value=log[key],
-                                                     step=epoch_number)
+                    # log to tensorboard
+                    for key in log:
+                        if key != 'epoch':
+                            self._log_tensorboard_scalar(tag=key, 
+                                                        value=log[key],
+                                                        step=epoch_number)
 
-                #  log the final epoch number
-                wandb.run.summary['epoch'] = epoch_number
+                    #  log the final epoch number
+                    wandb.run.summary['epoch'] = epoch_number
 
-                if val_mrr > best_val_mrr:
-                    # save the best val_mrr encountered
-                    best_val_mrr_loss, best_val_mrr = val_loss, val_mrr
+                    if val_mrr > best_val_mrr:
+                        # save the best val_mrr encountered
+                        best_val_mrr_loss, best_val_mrr = val_loss, val_mrr
 
-                    wandb.run.summary['best_val_mrr_loss'] = best_val_mrr_loss
-                    wandb.run.summary['best_val_mrr'] = val_mrr
-                    wandb.run.summary['best_epoch'] = epoch_number
+                        wandb.run.summary['best_val_mrr_loss'] = best_val_mrr_loss
+                        wandb.run.summary['best_val_mrr'] = val_mrr
+                        wandb.run.summary['best_epoch'] = epoch_number
 
-                    no_improvement_counter = 0
-                    self.save(model_path)
-                    self.train_log("  Best result so far -- saved model as '%s'." % (model_path,))
-                else:
-                    # record epochs without improvement for early stopping
-                    no_improvement_counter += 1
+                        no_improvement_counter = 0
+                        # if hvd.rank() == 0:
+                        self.save(model_path)
+                        self.train_log("  Best result so far -- saved model as '%s'." % (model_path,))
+                    else:
+                        # record epochs without improvement for early stopping
+                        no_improvement_counter += 1
                 epoch_number += 1
 
-            log_path = os.path.join(self.__log_save_dir,
-                                    f'{self.run_name}.train_log')
-            wandb.save(log_path)
-            tf.io.write_graph(self.__sess.graph,
-                              logdir=wandb.run.dir,
-                              name=f'{self.run_name}-graph.pbtxt')
+            if hvd.rank() ==  0:
+                log_path = os.path.join(self.__log_save_dir,
+                                        f'{self.run_name}.train_log')                   #rifat
+                wandb.save(log_path)
+                tf.io.write_graph(self.__sess.graph,                        
+                                logdir=wandb.run.dir,
+                                name=f'{self.run_name}-graph.pbtxt')
 
         self.__summary_writer.close()
         return model_path
