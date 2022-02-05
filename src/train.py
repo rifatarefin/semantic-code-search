@@ -100,7 +100,7 @@ def make_run_id(arguments: Dict[str, Any]) -> str:
         user_save_name = user_save_name[:-len('.pkl')] if user_save_name.endswith('.pkl') else user_save_name
     else:
         user_save_name = arguments['--model']
-    return "%s-%s" % (user_save_name, time.strftime("%Y-%m-%d-%H-%M-%S"))
+    return "%s-%s" % (user_save_name, time.strftime("%Y-%m-%d-%H-%M"))
 
 
 def run(arguments, tag_in_vcs=False) -> None:

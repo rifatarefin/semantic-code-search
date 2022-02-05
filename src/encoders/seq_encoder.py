@@ -166,6 +166,19 @@ class SeqEncoder(Encoder):
                                                hyperparameters[f'{encoder_label}_max_num_tokens'])
             # Note that we share the result_holder with different encoders, and so we need to make our identifiers
             # unique-ish
+            # print("DATA")
+            # print(type(data), "Len ", str(len(data)))
+            # print(data)
+            # print("TOKEN ", type(tokens), " ", str(tokens.shape))
+            # print(tokens)
+            # print("TOKEN MASK ", type(tokens_mask), " ", str(tokens_mask.shape))
+            # print(tokens_mask)
+
+            from transformers import GPT2Tokenizer, TFGPT2Model
+            tokenizer = GPT2Tokenizer.from_pretrained('gpt2', cache_dir = './cache/')
+            inputs = tokenizer(, return_tensors="tf")
+
+            exit()
             result_holder[f'{encoder_label}_tokens_{key}'] = tokens
             result_holder[f'{encoder_label}_tokens_mask_{key}'] = tokens_mask
             result_holder[f'{encoder_label}_tokens_length_{key}'] = int(np.sum(tokens_mask))
