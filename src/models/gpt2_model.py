@@ -10,12 +10,12 @@ class GPT2Model(Model):
         hypers = {}
         for label in ["code", "query"]:
             hypers.update({f'{label}_{key}': value
-                           for key, value in SelfAttentionEncoder.get_default_hyperparameters().items()})
+                           for key, value in GPT2Encoder.get_default_hyperparameters().items()})
         model_hypers = {
             'learning_rate': 5e-4,
             'code_use_subtokens': False,
             'code_mark_subtoken_end': False,
-            'batch_size': 400,
+            'batch_size': 20,
         }
         hypers.update(super().get_default_hyperparameters())
         hypers.update(model_hypers)

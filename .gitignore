@@ -28,3 +28,5 @@ resources/data/*
 .*
 src/log/*
 src/*.txt
+src/cache/
+*.sif

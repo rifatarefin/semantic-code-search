@@ -1,7 +1,7 @@
 from typing import Dict, Any
 
 import tensorflow.compat.v1 as tf
-tf.disable_v2_behavior()
+# tf.disable_v2_behavior()
 
 from .utils.bert_self_attention import BertConfig, BertModel
 from .masked_seq_encoder import MaskedSeqEncoder

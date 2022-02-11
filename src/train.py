@@ -168,6 +168,7 @@ def run(arguments, tag_in_vcs=False) -> None:
                          'CLI-command': ' '.join(sys.argv)})
 
 
+    
     if arguments.get('--evaluate-model'):
         model_path = RichPath.create(arguments['--evaluate-model'])
     else:
@@ -187,5 +188,6 @@ def run(arguments, tag_in_vcs=False) -> None:
 
 
 if __name__ == '__main__':
+    
     args = docopt(__doc__)
     run_and_debug(lambda: run(args), args['--debug'])
