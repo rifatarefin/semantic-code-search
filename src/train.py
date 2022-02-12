@@ -44,6 +44,10 @@ from docopt import docopt
 from dpu_utils.utils import RichPath, git_tag_run, run_and_debug
 import wandb
 
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
+# tf.enable_eager_execution()
+
 import model_restore_helper
 from model_test import compute_evaluation_metrics
 from models.model import Model
@@ -188,6 +192,6 @@ def run(arguments, tag_in_vcs=False) -> None:
 
 
 if __name__ == '__main__':
-    
+    # tf.disable_v2_behavior()
     args = docopt(__doc__)
     run_and_debug(lambda: run(args), args['--debug'])

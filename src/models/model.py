@@ -11,7 +11,7 @@ from typing import List, Dict, Any, Iterable, Tuple, Optional, Union, Callable, 
 import numpy as np
 import wandb
 import tensorflow.compat.v1 as tf
-
+# tf.disable_v2_behavior()
 import horovod.tensorflow as hvd  #rifat
 
 from dpu_utils.utils import RichPath
@@ -49,7 +49,7 @@ def parse_data_file(hyperparameters: Dict[str, Any],
                     query_metadata: Dict[str, Any],
                     is_test: bool,
                     data_file: RichPath) -> Dict[str, List[Tuple[bool, Dict[str, Any]]]]:
-    print("PARSE DATA")
+    # print("PARSE DATA 1")
     results: DefaultDict[str, List] = defaultdict(list)
     for raw_sample in data_file.read_by_file_suffix():
         sample: Dict = {}
@@ -63,7 +63,7 @@ def parse_data_file(hyperparameters: Dict[str, Any],
         use_code_flag = code_encoder_class.load_data_from_sample("code",
                                                                  hyperparameters,
                                                                  per_code_language_metadata[language],
-                                                                 raw_sample['code'],
+                                                                 raw_sample['code_tokens'],
                                                                  function_name,
                                                                  sample,
                                                                  is_test)
@@ -71,12 +71,13 @@ def parse_data_file(hyperparameters: Dict[str, Any],
         use_query_flag = query_encoder_class.load_data_from_sample("query",
                                                                    hyperparameters,
                                                                    query_metadata,
-                                                                   raw_sample['docstring'].lower(),
+                                                                   [d.lower() for d in raw_sample['docstring_tokens']],
                                                                    function_name,
                                                                    sample,
                                                                    is_test)
         use_example = use_code_flag and use_query_flag
         results[language].append((use_example, sample))
+    # print("PARSE DATA 2")
     return results
 
 

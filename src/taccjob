@@ -17,4 +17,4 @@ pwd
 date
 
 
-ibrun -np 1 python3 train.py --testrun --dryrun --model gpt2
+ibrun -np 2 python3 train.py --testrun --dryrun --model selfatt

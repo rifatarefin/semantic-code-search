@@ -14,9 +14,9 @@ from dpu_utils.codeutils import split_identifier_into_parts
 from dpu_utils.mlutils import Vocabulary
 
 from .encoder import Encoder, QueryType
-tokenizer = GPT2TokenizerFast.from_pretrained('gpt2', cache_dir = './cache/', pad_token="<|endoftext|>")
 
 class SeqEncoder(Encoder):
+    tokenizer = GPT2TokenizerFast.from_pretrained('gpt2', cache_dir = './cache/', pad_token="<|endoftext|>")
     @classmethod
     def get_default_hyperparameters(cls) -> Dict[str, Any]:
         encoder_hypers = { 'token_vocab_size': 10000,
@@ -162,9 +162,9 @@ class SeqEncoder(Encoder):
                 data = cls._to_subtoken_stream(data,
                                                mark_subtoken_end=hyperparameters[
                                                    f'{encoder_label}_mark_subtoken_end'])
-            # tokens, tokens_mask = \
-            #     convert_and_pad_token_sequence(metadata['token_vocab'], list(data),
-            #                                    hyperparameters[f'{encoder_label}_max_num_tokens'])
+            tokens, tokens_mask = \
+                convert_and_pad_token_sequence(metadata['token_vocab'], list(data),
+                                               hyperparameters[f'{encoder_label}_max_num_tokens'])
             # Note that we share the result_holder with different encoders, and so we need to make our identifiers
             # unique-ish
             # print("DATA")
@@ -175,8 +175,8 @@ class SeqEncoder(Encoder):
             # print("TOKEN MASK ", type(tokens_mask), " ", str(tokens_mask.shape))
             # print(tokens_mask)
 
-            global tokenizer
-            inputs = tokenizer(data, return_tensors="tf", return_attention_mask=True, max_length = hyperparameters[f'{encoder_label}_max_num_tokens'], truncation = True, padding = 'max_length')
+            # global tokenizer
+            inputs = SeqEncoder.tokenizer(data, return_tensors="np", return_attention_mask=True, max_length = hyperparameters[f'{encoder_label}_max_num_tokens'], truncation = True, padding = 'max_length')
             
             # print("GPT input id ", str(inputs['input_ids'].shape))
             # print(inputs['input_ids'])
@@ -187,9 +187,13 @@ class SeqEncoder(Encoder):
             
             # exit()
 
-            result_holder[f'{encoder_label}_tokens_{key}'] = inputs['input_ids']
-            result_holder[f'{encoder_label}_tokens_mask_{key}'] = inputs['attention_mask']
-            result_holder[f'{encoder_label}_tokens_length_{key}'] = inputs['attention_mask'].shape[-1]  #int(np.sum(tokens_mask))
+            # result_holder[f'{encoder_label}_tokens_{key}'] = inputs['input_ids']
+            # result_holder[f'{encoder_label}_tokens_mask_{key}'] = inputs['attention_mask']
+            # result_holder[f'{encoder_label}_tokens_length_{key}'] = inputs['attention_mask'].shape[-1]  #int(np.sum(tokens_mask))
+
+            result_holder[f'{encoder_label}_tokens_{key}'] = tokens
+            result_holder[f'{encoder_label}_tokens_mask_{key}'] = tokens_mask
+            result_holder[f'{encoder_label}_tokens_length_{key}'] = int(np.sum(tokens_mask))
 
         if result_holder[f'{encoder_label}_tokens_mask_{QueryType.DOCSTRING.value}'] is None or \
                 int(np.sum(result_holder[f'{encoder_label}_tokens_mask_{QueryType.DOCSTRING.value}'])) == 0:

@@ -10,7 +10,7 @@ from transformers import TFGPT2Model
 
 
 class GPT2Encoder(MaskedSeqEncoder):
-    model = TFGPT2Model.from_pretrained('gpt2', cache_dir = './cache/')
+    # model = TFGPT2Model.from_pretrained('gpt2', cache_dir = './cache/')
     
     @classmethod
     def get_default_hyperparameters(cls) -> Dict[str, Any]:
@@ -39,16 +39,16 @@ class GPT2Encoder(MaskedSeqEncoder):
             self._make_placeholders()
 
             output_pool_mode = self.get_hyper('self_attention_pool_mode').lower()
-            if output_pool_mode == 'gpt2':
-                outputs =  GPT2Encoder.model(self.placeholders['tokens'], attention_mask=self.placeholders['tokens_mask'], training = is_train, return_dict=True)
-                return outputs.last_hidden_state
+            # if output_pool_mode == 'gpt2':
+            #     outputs =  GPT2Encoder.model(self.placeholders['tokens'], attention_mask=self.placeholders['tokens_mask'], training = is_train, return_dict=True)
+            #     return outputs.last_hidden_state
 
-            else:
-                seq_token_embeddings = GPT2Encoder.model(self.placeholders['tokens'], attention_mask=self.placeholders['tokens_mask'], training = is_train, return_dict=True).last_hidden_state
-                print("After")
-                seq_token_masks = self.placeholders['tokens_mask']
-                seq_token_lengths = tf.reduce_sum(seq_token_masks, axis=1)  # B
-                return pool_sequence_embedding(output_pool_mode,
-                                               sequence_token_embeddings=seq_token_embeddings,
-                                               sequence_lengths=seq_token_lengths,
-                                               sequence_token_masks=seq_token_masks)
+            # else:
+            #     seq_token_embeddings = GPT2Encoder.model(self.placeholders['tokens'], attention_mask=self.placeholders['tokens_mask'], training = is_train, return_dict=True).last_hidden_state
+            #     print("After")
+            #     seq_token_masks = self.placeholders['tokens_mask']
+            #     seq_token_lengths = tf.reduce_sum(seq_token_masks, axis=1)  # B
+            #     return pool_sequence_embedding(output_pool_mode,
+            #                                    sequence_token_embeddings=seq_token_embeddings,
+            #                                    sequence_lengths=seq_token_lengths,
+            #                                    sequence_token_masks=seq_token_masks)
