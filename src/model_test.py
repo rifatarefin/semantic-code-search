@@ -233,6 +233,9 @@ def compute_evaluation_metrics(model_path: RichPath, arguments,
     tester = MrrSearchTester(model_path, test_batch_size=int(arguments['--test-batch-size']),
                                   distance_metric=arguments['--distance-metric'])
     test_data = get_dataset_from(test_data_dirs, max_files_per_dir=max_files_per_dir)
+    import time
+    print("TEST Data Loaded")
+    print(time.ctime())
     # Get all languages in test_data
     dataset_languages = set(d['language'] for d in test_data)
     evaluation_sets = list((l, True) for l in dataset_languages)  # type: List[Tuple[str, bool]]
@@ -255,6 +258,8 @@ def compute_evaluation_metrics(model_path: RichPath, arguments,
         # run the test procedure on the validation set (with same batch size as test, so that MRR is comparable)
         tester.evaluate(get_dataset_from(valid_data_dirs, max_files_per_dir=max_files_per_dir), f'Validation-{language_name}',
                         filter_language=language_name if filter_language else None)
+        print("TEST ", language_name)
+        print(time.ctime())
 
     if wandb.run and final_eval:
         wandb.run.summary['Eval'] = final_eval

@@ -1,7 +1,7 @@
 from typing import Dict, Any
 
 import tensorflow.compat.v1 as tf
-# tf.disable_v2_behavior()
+tf.disable_v2_behavior()
 
 from .masked_seq_encoder import MaskedSeqEncoder
 from utils.tfutils import pool_sequence_embedding

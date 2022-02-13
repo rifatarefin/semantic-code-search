@@ -11,7 +11,7 @@ from typing import List, Dict, Any, Iterable, Tuple, Optional, Union, Callable, 
 import numpy as np
 import wandb
 import tensorflow.compat.v1 as tf
-# tf.disable_v2_behavior()
+tf.disable_v2_behavior()
 import horovod.tensorflow as hvd  #rifat
 
 from dpu_utils.utils import RichPath
@@ -49,7 +49,6 @@ def parse_data_file(hyperparameters: Dict[str, Any],
                     query_metadata: Dict[str, Any],
                     is_test: bool,
                     data_file: RichPath) -> Dict[str, List[Tuple[bool, Dict[str, Any]]]]:
-    # print("PARSE DATA 1")
     results: DefaultDict[str, List] = defaultdict(list)
     for raw_sample in data_file.read_by_file_suffix():
         sample: Dict = {}
@@ -77,7 +76,6 @@ def parse_data_file(hyperparameters: Dict[str, Any],
                                                                    is_test)
         use_example = use_code_flag and use_query_flag
         results[language].append((use_example, sample))
-    # print("PARSE DATA 2")
     return results
 
 
@@ -230,12 +228,11 @@ class Model(ABC):
         print(msg.encode('ascii', errors='replace').decode())
 
     def make_model(self, is_train: bool):
-        
         with self.__sess.graph.as_default():
             random.seed(self.hyperparameters['seed'])
             np.random.seed(self.hyperparameters['seed'])
             tf.set_random_seed(self.hyperparameters['seed'])
-            
+
             self._make_model(is_train=is_train)
             self._make_loss()
             if is_train:

@@ -8,15 +8,16 @@ from utils.bpevocabulary import BpeVocabulary
 from utils.tfutils import convert_and_pad_token_sequence
 
 import tensorflow.compat.v1 as tf
-# tf.disable_v2_behavior()
+tf.disable_v2_behavior()
 from transformers import GPT2TokenizerFast
 from dpu_utils.codeutils import split_identifier_into_parts
 from dpu_utils.mlutils import Vocabulary
 
 from .encoder import Encoder, QueryType
 
+
 class SeqEncoder(Encoder):
-    tokenizer = GPT2TokenizerFast.from_pretrained('gpt2', cache_dir = './cache/', pad_token="<|endoftext|>")
+    tokenizer = GPT2TokenizerFast.from_pretrained('gpt2', cache_dir = './cache/', pad_token="<|endoftext|>", add_prefix_space=True)
     @classmethod
     def get_default_hyperparameters(cls) -> Dict[str, Any]:
         encoder_hypers = { 'token_vocab_size': 10000,
@@ -43,7 +44,6 @@ class SeqEncoder(Encoder):
             assert not hyperparameters['%s_use_subtokens' % label], 'Subtokens cannot be used along with BPE.'
         elif hyperparameters['%s_use_subtokens' % label]:
             assert not hyperparameters['%s_use_bpe' % label], 'Subtokens cannot be used along with BPE.'
-        
 
     def _make_placeholders(self):
         """
@@ -167,33 +167,25 @@ class SeqEncoder(Encoder):
                                                hyperparameters[f'{encoder_label}_max_num_tokens'])
             # Note that we share the result_holder with different encoders, and so we need to make our identifiers
             # unique-ish
-            # print("DATA")
-            # print(type(data), "Len ", str(len(data)))
-            # print(data)
-            # print("TOKEN ", type(tokens), " ", str(tokens.shape))
+
+            inputs = SeqEncoder.tokenizer(data, return_tensors="np", return_attention_mask=True, max_length = hyperparameters[f'{encoder_label}_max_num_tokens'], truncation = True, padding = 'max_length', is_pretokenized=True)
+            ptokens = inputs['input_ids'].flatten()
+            ptoken_masks = inputs['attention_mask'].flatten()
+            ptoken_length = inputs['attention_mask'].shape[-1]
+
+            # print ("Tokens")
+            # print(tokens.shape)
             # print(tokens)
-            # print("TOKEN MASK ", type(tokens_mask), " ", str(tokens_mask.shape))
-            # print(tokens_mask)
 
-            # global tokenizer
-            inputs = SeqEncoder.tokenizer(data, return_tensors="np", return_attention_mask=True, max_length = hyperparameters[f'{encoder_label}_max_num_tokens'], truncation = True, padding = 'max_length')
+            # print ("PTokens")
+            # print(ptokens.shape)
+            # print(ptokens)
+            assert ptokens.shape==tokens.shape, "Error 1"
             
-            # print("GPT input id ", str(inputs['input_ids'].shape))
-            # print(inputs['input_ids'])
-            # print("GPT attention mask", str(inputs['attention_mask'].shape))
-            # print(inputs['attention_mask'])
-            # print("MASK Len")
-            # print(inputs['attention_mask'].shape[-1])
-            
-            # exit()
 
-            # result_holder[f'{encoder_label}_tokens_{key}'] = inputs['input_ids']
-            # result_holder[f'{encoder_label}_tokens_mask_{key}'] = inputs['attention_mask']
-            # result_holder[f'{encoder_label}_tokens_length_{key}'] = inputs['attention_mask'].shape[-1]  #int(np.sum(tokens_mask))
-
-            result_holder[f'{encoder_label}_tokens_{key}'] = tokens
-            result_holder[f'{encoder_label}_tokens_mask_{key}'] = tokens_mask
-            result_holder[f'{encoder_label}_tokens_length_{key}'] = int(np.sum(tokens_mask))
+            result_holder[f'{encoder_label}_tokens_{key}'] = ptokens
+            result_holder[f'{encoder_label}_tokens_mask_{key}'] = ptoken_masks
+            result_holder[f'{encoder_label}_tokens_length_{key}'] = ptoken_length       #int(np.sum(tokens_mask))
 
         if result_holder[f'{encoder_label}_tokens_mask_{QueryType.DOCSTRING.value}'] is None or \
                 int(np.sum(result_holder[f'{encoder_label}_tokens_mask_{QueryType.DOCSTRING.value}'])) == 0:
@@ -213,6 +205,7 @@ class SeqEncoder(Encoder):
         current_sample['tokens'] = sample[f'{self.label}_tokens_{query_type}']
         current_sample['tokens_mask'] = sample[f'{self.label}_tokens_mask_{query_type}']
         current_sample['tokens_lengths'] = sample[f'{self.label}_tokens_length_{query_type}']
+
         # In the query, randomly add high-frequency tokens:
         # TODO: Add tokens with frequency proportional to their frequency in the vocabulary
         if is_train and self.label == 'query' and self.hyperparameters['query_random_token_frequency'] > 0.:
@@ -227,14 +220,7 @@ class SeqEncoder(Encoder):
                 tokens_to_add = [random.randrange(0, len(self.metadata['common_tokens']))
                                  for _ in range(len(insert_indices))]  # select one of the most common tokens for each location
                 tokens_to_add = [self.metadata['common_tokens'][token][0] for token in tokens_to_add]  # get the word corresponding to the token we're adding
-                # print("Token to add")
-                # print(type(tokens_to_add[0]))
-                # print(tokens_to_add)
                 tokens_to_add = [self.metadata['token_vocab'].get_id_or_unk(token) for token in tokens_to_add]  # get the index within the vocab of the token we're adding
-                # print("Token vocab")
-                # print(type(tokens_to_add[0]))
-                # print(tokens_to_add)
-                # exit()
                 # Efficiently insert the added tokens, leaving the total length the same:
                 to_insert = 0
                 output_query = np.zeros(total_length, dtype=int)

@@ -44,10 +44,6 @@ from docopt import docopt
 from dpu_utils.utils import RichPath, git_tag_run, run_and_debug
 import wandb
 
-import tensorflow.compat.v1 as tf
-tf.disable_v2_behavior()
-# tf.enable_eager_execution()
-
 import model_restore_helper
 from model_test import compute_evaluation_metrics
 from models.model import Model
@@ -104,7 +100,7 @@ def make_run_id(arguments: Dict[str, Any]) -> str:
         user_save_name = user_save_name[:-len('.pkl')] if user_save_name.endswith('.pkl') else user_save_name
     else:
         user_save_name = arguments['--model']
-    return "%s-%s" % (user_save_name, time.strftime("%Y-%m-%d-%H-%M"))
+    return "%s-%s" % (user_save_name, time.strftime("%Y-%m-%d-%H-%M-%S"))
 
 
 def run(arguments, tag_in_vcs=False) -> None:
@@ -172,7 +168,6 @@ def run(arguments, tag_in_vcs=False) -> None:
                          'CLI-command': ' '.join(sys.argv)})
 
 
-    
     if arguments.get('--evaluate-model'):
         model_path = RichPath.create(arguments['--evaluate-model'])
     else:
@@ -183,6 +178,9 @@ def run(arguments, tag_in_vcs=False) -> None:
 
     wandb.config['best_model_path'] = str(model_path)
     wandb.save(str(model_path.to_local_path()))
+    import time
+    print("TEST STARTS")
+    print(time.ctime())
 
     # only limit files in test run if `--testrun` flag is passed by user.
     if testrun:
@@ -192,6 +190,5 @@ def run(arguments, tag_in_vcs=False) -> None:
 
 
 if __name__ == '__main__':
-    # tf.disable_v2_behavior()
     args = docopt(__doc__)
     run_and_debug(lambda: run(args), args['--debug'])
