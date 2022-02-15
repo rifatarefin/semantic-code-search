@@ -8,7 +8,7 @@ from utils.bpevocabulary import BpeVocabulary
 from utils.tfutils import convert_and_pad_token_sequence
 
 import tensorflow.compat.v1 as tf
-tf.disable_v2_behavior()
+# tf.disable_v2_behavior()
 from transformers import GPT2TokenizerFast
 from dpu_utils.codeutils import split_identifier_into_parts
 from dpu_utils.mlutils import Vocabulary
@@ -162,9 +162,9 @@ class SeqEncoder(Encoder):
                 data = cls._to_subtoken_stream(data,
                                                mark_subtoken_end=hyperparameters[
                                                    f'{encoder_label}_mark_subtoken_end'])
-            tokens, tokens_mask = \
-                convert_and_pad_token_sequence(metadata['token_vocab'], list(data),
-                                               hyperparameters[f'{encoder_label}_max_num_tokens'])
+            # tokens, tokens_mask = \
+            #     convert_and_pad_token_sequence(metadata['token_vocab'], list(data),
+            #                                    hyperparameters[f'{encoder_label}_max_num_tokens'])
             # Note that we share the result_holder with different encoders, and so we need to make our identifiers
             # unique-ish
 
@@ -180,7 +180,7 @@ class SeqEncoder(Encoder):
             # print ("PTokens")
             # print(ptokens.shape)
             # print(ptokens)
-            assert ptokens.shape==tokens.shape, "Error 1"
+            # assert ptokens.shape==tokens.shape, "Error 1"
             
 
             result_holder[f'{encoder_label}_tokens_{key}'] = ptokens

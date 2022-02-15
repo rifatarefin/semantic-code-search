@@ -10,8 +10,9 @@ from typing import List, Dict, Any, Iterable, Tuple, Optional, Union, Callable, 
 
 import numpy as np
 import wandb
+import tensorflow as tf2
 import tensorflow.compat.v1 as tf
-tf.disable_v2_behavior()
+# tf.disable_v2_behavior()
 import horovod.tensorflow as hvd  #rifat
 
 from dpu_utils.utils import RichPath
@@ -197,7 +198,8 @@ class Model(ABC):
         self.__summary_writer.flush()
 
     def save(self, path: RichPath) -> None:
-        variables_to_save = list(set(self.__sess.graph.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)))
+        print(type(self.__sess.graph.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)))
+        variables_to_save = self.__sess.graph.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)                             #rifat
         weights_to_save = self.__sess.run(variables_to_save)
         weights_to_save = {var.name: value
                            for (var, value) in zip(variables_to_save, weights_to_save)}
@@ -730,6 +732,11 @@ class Model(ABC):
             if is_train:
                 ops_to_run['train_step'] = self.__ops['train_step']
             op_results = self.__sess.run(ops_to_run, feed_dict=batch_data_dict)
+
+            # if minibatch_counter == 0 and ("0 (train)" in epoch_name):
+            #     print("BROAD")
+            #     self.bcast.run()
+            #     print("CAST")
             assert not np.isnan(op_results['loss'])
 
             epoch_loss += op_results['loss'] * samples_in_batch
@@ -778,6 +785,7 @@ class Model(ABC):
                 self.train_log('Validation Loss on Resume: %.6f' % (best_val_mrr_loss,))
             else:
                 init_op = tf.variables_initializer(self.__sess.graph.get_collection(tf.GraphKeys.GLOBAL_VARIABLES))
+                # init_op = tf.global_variables_initializer()
                 self.__sess.run(init_op)
                 best_val_mrr = 0
                 if hvd.rank() == 0:                                                 #rifat

@@ -2,7 +2,7 @@ from typing import Dict, Any, Iterable, Optional
 
 import numpy as np
 import tensorflow.compat.v1 as tf
-tf.disable_v2_behavior()
+# tf.disable_v2_behavior()
 
 from .seq_encoder import SeqEncoder
 from utils.tfutils import write_to_feed_dict, pool_sequence_embedding

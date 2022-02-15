@@ -25,7 +25,7 @@ import math
 import re
 import six
 import tensorflow.compat.v1 as tf
-tf.disable_v2_behavior()
+# tf.disable_v2_behavior()
 
 from utils.tfutils import get_activation
 

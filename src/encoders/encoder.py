@@ -3,7 +3,7 @@ from enum import Enum
 from typing import List, Dict, Any, Optional, Tuple
 
 import tensorflow.compat.v1 as tf
-tf.disable_v2_behavior()
+# tf.disable_v2_behavior()
 
 
 class QueryType(Enum):

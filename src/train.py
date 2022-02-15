@@ -39,6 +39,8 @@ import sys
 import time
 from typing import Type, Dict, Any, Optional, List
 from pathlib import Path
+import tensorflow.compat.v1 as tf
+tf.enable_eager_execution()
 
 from docopt import docopt
 from dpu_utils.utils import RichPath, git_tag_run, run_and_debug
@@ -100,7 +102,7 @@ def make_run_id(arguments: Dict[str, Any]) -> str:
         user_save_name = user_save_name[:-len('.pkl')] if user_save_name.endswith('.pkl') else user_save_name
     else:
         user_save_name = arguments['--model']
-    return "%s-%s" % (user_save_name, time.strftime("%Y-%m-%d-%H-%M-%S"))
+    return "%s-%s" % (user_save_name, time.strftime("%Y-%m-%d-%H-%M"))
 
 
 def run(arguments, tag_in_vcs=False) -> None:
