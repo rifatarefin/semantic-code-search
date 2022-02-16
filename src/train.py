@@ -39,8 +39,6 @@ import sys
 import time
 from typing import Type, Dict, Any, Optional, List
 from pathlib import Path
-import tensorflow.compat.v1 as tf
-tf.enable_eager_execution()
 
 from docopt import docopt
 from dpu_utils.utils import RichPath, git_tag_run, run_and_debug

@@ -5,7 +5,7 @@ import tensorflow.compat.v1 as tf
 
 from dpu_utils.utils import RichPath
 
-from models import GPT2Model, Model, NeuralBoWModel, RNNModel, SelfAttentionModel, ConvolutionalModel, ConvSelfAttentionModel
+from models import Model, NeuralBoWModel, RNNModel, SelfAttentionModel, ConvolutionalModel, ConvSelfAttentionModel
 
 
 def get_model_class_from_name(model_name: str) -> Type[Model]:
@@ -21,6 +21,7 @@ def get_model_class_from_name(model_name: str) -> Type[Model]:
     elif model_name in {'convselfatt', 'convselfattentionmodel'}:
         return ConvSelfAttentionModel
     elif model_name in {'gpt2', 'gpt-2'}:
+        from models import GPT2Model
         return GPT2Model
     else:
         raise Exception("Unknown model '%s'!" % model_name)

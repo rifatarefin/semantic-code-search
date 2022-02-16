@@ -1,16 +1,17 @@
 from typing import Dict, Any
 
 import tensorflow.compat.v1 as tf
-# tf.disable_v2_behavior()
+tf.disable_eager_execution()
 
+from .utils.bert_self_attention import BertConfig, BertModel
 from .masked_seq_encoder import MaskedSeqEncoder
 from utils.tfutils import pool_sequence_embedding
 from transformers import TFGPT2Model
 
 
 class GPT2Encoder(MaskedSeqEncoder):
-    
     model = TFGPT2Model.from_pretrained('gpt2', cache_dir = './cache/')
+    
     @classmethod
     def get_default_hyperparameters(cls) -> Dict[str, Any]:
         encoder_hypers = {'self_attention_activation': 'gelu',
