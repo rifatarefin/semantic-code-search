@@ -41,7 +41,7 @@ class SeqEncoder(Encoder):
     def __init__(self, label: str, hyperparameters: Dict[str, Any], metadata: Dict[str, Any]):
         super().__init__(label, hyperparameters, metadata)
 
-        SeqEncoder.tokenizer = GPT2TokenizerFast.from_pretrained('gpt2', cache_dir = './cache/', pad_token="<|endoftext|>", add_prefix_space=True)
+        SeqEncoder.tokenizer = GPT2TokenizerFast.from_pretrained('microsoft/CodeGPT-small-java-adaptedGPT2', cache_dir = './cache/', pad_token="<|endoftext|>", add_prefix_space=True)
 
         if hyperparameters['%s_use_bpe' % label]:
             assert not hyperparameters['%s_use_subtokens' % label], 'Subtokens cannot be used along with BPE.'

@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH -J CNet           # Job name
-#SBATCH -o log/csnet.out       # Name of stdout output file
-#SBATCH -e log/csnet.err       # Name of stderr error file
+#SBATCH -o log/codegpt.out       # Name of stdout output file
+#SBATCH -e log/codegpt.err       # Name of stderr error file
 #SBATCH -p gtx          # Queue (partition) name
 #SBATCH -N 1               # Total # of nodes (must be 1 for serial)
 #SBATCH -n 1               # Total # of mpi tasks (should be 1 for serial) horovod: n==N
@@ -17,4 +17,4 @@ pwd
 date
 
 
-ibrun -np 4 python3 train.py --testrun --model gpt2
+ibrun -np 4 python3 train.py --model gpt2

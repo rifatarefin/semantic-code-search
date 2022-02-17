@@ -10,9 +10,19 @@ from typing import List, Dict, Any, Iterable, Tuple, Optional, Union, Callable, 
 
 import numpy as np
 import wandb
+import horovod.tensorflow as hvd  #rifat
+hvd.init()                                          #rifat
+# os.environ['CUDA_VISIBLE_DEVICES'] = str(hvd.local_rank())
+import tensorflow as tf2
+gpus = tf2.config.experimental.list_physical_devices('GPU')
+for gpu in gpus:
+    tf2.config.experimental.set_memory_growth(gpu, True)
+if gpus:
+    tf2.config.experimental.set_visible_devices(gpus[hvd.local_rank()], 'GPU')
+
+
 import tensorflow.compat.v1 as tf
 tf.disable_eager_execution()
-import horovod.tensorflow as hvd  #rifat
 
 from dpu_utils.utils import RichPath
 
@@ -33,7 +43,9 @@ def get_data_files_from_directory(data_dirs: List[RichPath],
                                   max_files_per_dir: Optional[int] = None) -> List[RichPath]:
     files = []  # type: List[str]
     for data_dir in data_dirs:
-        dir_files = data_dir.get_filtered_files_in_dir('*.jsonl.gz')
+        pattern = str(hvd.rank())+'*.jsonl.gz'
+        print(pattern)
+        dir_files = data_dir.get_filtered_files_in_dir(pattern)
         if max_files_per_dir:
             dir_files = sorted(dir_files)[:int(max_files_per_dir)]
         files += dir_files
@@ -147,16 +159,15 @@ class Model(ABC):
             self.__log_save_dir = os.environ.get('PHILLY_LOG_DIRECTORY', default='.')  # type: str
         else:
             self.__log_save_dir = log_save_dir  # type: str
-        hvd.init()                                          #rifat
 
-        config = tf.ConfigProto()
-        config.gpu_options.allow_growth = True
-        config.gpu_options.visible_device_list = str(hvd.local_rank())
+        # config = tf.ConfigProto()
+        # config.gpu_options.allow_growth = True
+        # config.gpu_options.visible_device_list = str(hvd.local_rank())
         # if "gpu_device_id" in self.hyperparameters:
         #     config.gpu_options.visible_device_list = str(self.hyperparameters["gpu_device_id"])
 
         graph = tf.Graph()
-        self.__sess = tf.Session(graph=graph, config=config)
+        self.__sess = tf.Session(graph=graph)
 
         # save directory as tensorboard.
         self.__tensorboard_dir = log_save_dir

@@ -157,7 +157,7 @@ def run(arguments, tag_in_vcs=False) -> None:
         os.environ["WANDB_MODE"] = 'dryrun'
     # save hyperparams to logging
     # must filter out type=set from logging when as that is not json serializable
-    wandb.init(name=run_name, settings=wandb.Settings(start_method="thread"), group="Base", config={k: v for k, v in hyperparameters.items() if not isinstance(v, set)})
+    wandb.init(name=run_name, settings=wandb.Settings(start_method="thread"), group="CodeGPT", config={k: v for k, v in hyperparameters.items() if not isinstance(v, set)})
     wandb.config.update({'model-class': arguments['--model'],
                          'train_folder': str(train_data_dirs),
                          'valid_folder': str(valid_data_dirs),
