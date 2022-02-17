@@ -17,7 +17,7 @@ from .encoder import Encoder, QueryType
 
 
 class SeqEncoder(Encoder):
-    tokenizer = GPT2TokenizerFast.from_pretrained('gpt2', cache_dir = './cache/', pad_token="<|endoftext|>", add_prefix_space=True)
+    tokenizer = None
     @classmethod
     def get_default_hyperparameters(cls) -> Dict[str, Any]:
         encoder_hypers = { 'token_vocab_size': 10000,
@@ -40,6 +40,9 @@ class SeqEncoder(Encoder):
 
     def __init__(self, label: str, hyperparameters: Dict[str, Any], metadata: Dict[str, Any]):
         super().__init__(label, hyperparameters, metadata)
+
+        SeqEncoder.tokenizer = GPT2TokenizerFast.from_pretrained('gpt2', cache_dir = './cache/', pad_token="<|endoftext|>", add_prefix_space=True)
+
         if hyperparameters['%s_use_bpe' % label]:
             assert not hyperparameters['%s_use_subtokens' % label], 'Subtokens cannot be used along with BPE.'
         elif hyperparameters['%s_use_subtokens' % label]:

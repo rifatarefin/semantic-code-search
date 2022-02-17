@@ -10,7 +10,6 @@ from transformers import TFGPT2Model
 
 
 class GPT2Encoder(MaskedSeqEncoder):
-    model = TFGPT2Model.from_pretrained('gpt2', cache_dir = './cache/')
     
     @classmethod
     def get_default_hyperparameters(cls) -> Dict[str, Any]:
@@ -37,14 +36,15 @@ class GPT2Encoder(MaskedSeqEncoder):
     def make_model(self, is_train: bool = False) -> tf.Tensor:
         with tf.variable_scope("gpt2_encoder"):
             self._make_placeholders()
+            model = TFGPT2Model.from_pretrained('gpt2', cache_dir = './cache/')
 
             output_pool_mode = self.get_hyper('self_attention_pool_mode').lower()
             if output_pool_mode == 'gpt2':
-                outputs =  GPT2Encoder.model(self.placeholders['tokens'], attention_mask=self.placeholders['tokens_mask'], training = is_train, return_dict=True)
+                outputs =  model(self.placeholders['tokens'], attention_mask=self.placeholders['tokens_mask'], training = is_train, return_dict=True)
                 return outputs.last_hidden_state
 
             else:
-                seq_token_embeddings = GPT2Encoder.model(self.placeholders['tokens'], attention_mask=self.placeholders['tokens_mask'], training = is_train, return_dict=True).last_hidden_state
+                seq_token_embeddings = model(self.placeholders['tokens'], attention_mask=self.placeholders['tokens_mask'], training = is_train, return_dict=True).last_hidden_state
                 print("After")
                 seq_token_masks = self.placeholders['tokens_mask']
                 seq_token_lengths = tf.reduce_sum(seq_token_masks, axis=1)  # B

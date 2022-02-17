@@ -20,7 +20,7 @@ def get_model_class_from_name(model_name: str) -> Type[Model]:
         return ConvolutionalModel
     elif model_name in {'convselfatt', 'convselfattentionmodel'}:
         return ConvSelfAttentionModel
-    elif model_name in {'gpt2', 'gpt-2'}:
+    elif model_name in {'gpt2', 'gpt2model'}:
         from models import GPT2Model
         return GPT2Model
     else:
