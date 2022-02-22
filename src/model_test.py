@@ -135,13 +135,13 @@ class MrrSearchTester:
             # Log example tables for a sample of rankings of queries for each dataset
             if wandb.run:
                 examples_table_name = data_label_name.rstrip("-All")
-                examples_table_columns = ["Rank", "Language", "Query", "Code"]
+                examples_table_columns = ["Rank", "Language", "Query", "Func-name", "Code"]
                 for example, sample, rank in zip(batch_data, batch_sample, ranks):
                     if not sample:
                         continue
                     language = example['language']
                     markdown_code = "```%s\n" % language + example['code'].strip("\n") + "\n```"
-                    examples_table.append([rank, language, example['func_name'], markdown_code])
+                    examples_table.append([rank, language, example['docstring'], example['func_name'], markdown_code])
 
             sum_mrr += np.mean(1.0 / ranks)
 

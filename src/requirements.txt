@@ -9,3 +9,6 @@ pygments
 parso
 pandas
 toolz
+tensorflow-gpu
+transformers
+horovod

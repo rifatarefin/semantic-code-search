@@ -1,1 +1,1 @@
-../resources/data/java/final/jsonl/train
+../resources/data/python/final/jsonl/train

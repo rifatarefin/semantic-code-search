@@ -36,7 +36,7 @@ class GPT2Encoder(MaskedSeqEncoder):
     def make_model(self, is_train: bool = False) -> tf.Tensor:
         with tf.variable_scope("gpt2_encoder"):
             self._make_placeholders()
-            model = TFGPT2Model.from_pretrained('microsoft/CodeGPT-small-java-adaptedGPT2', cache_dir = './cache/')
+            model = TFGPT2Model.from_pretrained('microsoft/CodeGPT-small-py', cache_dir = './cache/')
 
             output_pool_mode = self.get_hyper('self_attention_pool_mode').lower()
             if output_pool_mode == 'gpt2':

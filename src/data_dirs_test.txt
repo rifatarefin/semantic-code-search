@@ -1,1 +1,1 @@
-../resources/data/java/final/jsonl/test
+../resources/data/python/final/jsonl/test
